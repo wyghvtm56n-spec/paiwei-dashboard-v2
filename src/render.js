@@ -326,6 +326,161 @@ export function renderDashboard(data) {
     })()
   }
 </section>
+
+
+    <section class="panel" style="margin-bottom:18px;">
+      <h2>🎬 AI 素材類型分析（近 7 天）</h2>
+
+      ${(() => {
+        const ads = Array.isArray(data.ads?.data) ? data.ads.data : [];
+
+        if (ads.length === 0) {
+          return `<div class="notice">目前沒有足夠的個別廣告資料可分析素材類型。</div>`;
+        }
+
+        const classifyMaterial = (adName = "") => {
+          const name = String(adName).toLowerCase();
+
+          if (name.includes("見證") || name.includes("案例")) {
+            return "客戶見證／案例";
+          }
+          if (
+            name.includes("過程") ||
+            name.includes("施工") ||
+            name.includes("拆洗") ||
+            name.includes("中洗")
+          ) {
+            return "施工／拆洗過程";
+          }
+          if (
+            name.includes("前後") ||
+            name.includes("對比") ||
+            name.includes("成果")
+          ) {
+            return "前後對比／成果";
+          }
+          if (
+            name.includes("品牌") ||
+            name.includes("形象") ||
+            name.includes("搜尋")
+          ) {
+            return "品牌形象／搜尋";
+          }
+          if (
+            name.includes("美女") ||
+            name.includes("老闆") ||
+            name.includes("人物")
+          ) {
+            return "人物開場／講解";
+          }
+
+          return "其他素材";
+        };
+
+        const grouped = new Map();
+
+        for (const ad of ads) {
+          const category = classifyMaterial(ad.ad_name || "");
+          const spend = Number(ad.spend || 0);
+          const clicks = Number(ad.clicks || 0);
+          const impressions = Number(ad.impressions || 0);
+
+          if (!grouped.has(category)) {
+            grouped.set(category, {
+              category,
+              ads: 0,
+              spend: 0,
+              clicks: 0,
+              impressions: 0,
+            });
+          }
+
+          const item = grouped.get(category);
+          item.ads += 1;
+          item.spend += spend;
+          item.clicks += clicks;
+          item.impressions += impressions;
+        }
+
+        const rows = Array.from(grouped.values())
+          .map((item) => {
+            const ctr =
+              item.impressions > 0
+                ? (item.clicks / item.impressions) * 100
+                : 0;
+            const cpc = item.clicks > 0 ? item.spend / item.clicks : 0;
+
+            let advice = "持續累積資料";
+            if (ctr >= 4 && cpc > 0 && cpc <= 3) {
+              advice = "表現佳，建議延伸同類素材";
+            } else if (ctr < 2 && item.spend >= 300) {
+              advice = "吸引力偏弱，建議重做前三秒或封面";
+            } else if (cpc > 5 && item.spend >= 300) {
+              advice = "點擊成本偏高，建議檢查素材與受眾";
+            } else if (ctr >= 3) {
+              advice = "表現穩定，可持續測試";
+            }
+
+            return {
+              ...item,
+              ctr,
+              cpc,
+              advice,
+            };
+          })
+          .sort((a, b) => {
+            if (b.ctr !== a.ctr) return b.ctr - a.ctr;
+            return a.cpc - b.cpc;
+          });
+
+        const best = rows[0];
+
+        return `
+          <div style="margin-bottom:16px;padding:14px 16px;border-radius:12px;background:#f8fafc;">
+            <strong>目前最佳素材類型：</strong>
+            ${escapeHtml(best.category)}
+            （CTR ${formatNumber(best.ctr, 2)}%、CPC NT$${formatNumber(best.cpc, 2)}）
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>素材類型</th>
+                <th>廣告數</th>
+                <th>花費</th>
+                <th>點擊</th>
+                <th>CTR</th>
+                <th>CPC</th>
+                <th>AI 建議</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows
+                .map(
+                  (row) => `
+                    <tr>
+                      <td>${escapeHtml(row.category)}</td>
+                      <td>${formatNumber(row.ads, 0)}</td>
+                      <td>NT$${formatNumber(row.spend, 0)}</td>
+                      <td>${formatNumber(row.clicks, 0)}</td>
+                      <td>${formatNumber(row.ctr, 2)}%</td>
+                      <td>NT$${formatNumber(row.cpc, 2)}</td>
+                      <td>${escapeHtml(row.advice)}</td>
+                    </tr>
+                  `,
+                )
+                .join("")}
+            </tbody>
+          </table>
+
+          <div style="margin-top:12px;color:#64748b;font-size:13px;line-height:1.7;">
+            分類依廣告名稱中的關鍵字自動判斷。之後廣告名稱若使用
+            V001_客戶見證、V002_施工過程等固定格式，分析會更準確。
+          </div>
+        `;
+      })()}
+    </section>
+
     <section class="panel" style="margin-bottom:18px;">
       <h2>Meta 廣告近 7 天趨勢</h2>
       <div class="chart-wrap">
