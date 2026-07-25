@@ -89,3 +89,23 @@ function emptySummary() {
     cpc: 0,
   };
 }
+export async function fetchMetaAdsByAd(env) {
+  const accountId = env.meta_ad_account_id;
+  const accessToken = env.META_ACCESS_TOKEN;
+
+  const url = new URL(
+    `https://graph.facebook.com/v25.0/${accountId}/insights`
+  );
+
+  url.searchParams.set(
+    "fields",
+    "ad_id,ad_name,campaign_name,adset_name,impressions,reach,clicks,spend,cpc,ctr"
+  );
+
+  url.searchParams.set("level", "ad");
+  url.searchParams.set("date_preset", "last_7d");
+  url.searchParams.set("access_token", accessToken);
+
+  const response = await fetch(url.toString());
+  return await response.json();
+}
