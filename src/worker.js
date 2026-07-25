@@ -46,16 +46,16 @@ export default {
       ]);
 
       return new Response(
-        renderDashboard({
-  line,
-  meta,
-  ads,
-}),
-        {
-          status: 200,
-          headers: htmlHeaders,
-        },
-      );
+  renderDashboard({
+    line,
+    meta,
+    ads,
+  }),
+  {
+    status: 200,
+    headers: htmlHeaders,
+  },
+);
     } catch (error) {
       console.error(error);
 
