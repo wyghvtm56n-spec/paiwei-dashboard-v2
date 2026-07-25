@@ -1,0 +1,15 @@
+name = "paiwei-line-dashboard"
+main = "src/worker.js"
+compatibility_date = "2026-07-25"
+
+# 請用 Cloudflare 現有 D1 資訊替換以下兩個值。
+[[d1_databases]]
+binding = "DB"
+database_name = "請填入目前使用的 D1 資料庫名稱"
+database_id = "請填入目前使用的 D1 database_id"
+
+# Cloudflare Variables:
+# meta_ad_account_id
+#
+# Cloudflare Secret:
+# META_ACCESS_TOKEN
