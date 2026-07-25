@@ -1,5 +1,5 @@
 import { fetchLineDashboard } from "./line.js";
-import { fetchMetaDaily } from "./meta.js";
+import { fetchMetaDaily, fetchMetaAdsByAd  } from "./meta.js";
 import { renderDashboard } from "./render.js";
 
 const htmlHeaders = {
@@ -39,14 +39,18 @@ export default {
     }
 
     try {
-      const [line, meta] = await Promise.all([
+      const [line, meta, ads] = await Promise.all([
         fetchLineDashboard(env),
-        fetchMetaDaily(env),
+  fetchMetaDaily(env),
+  fetchMetaAdsByAd(env),
       ]);
 
       return new Response(
-        renderDashboard({ line, meta }),
-        {
+        renderDashboard({
+  line,
+  meta,
+  ads,
+}),
           status: 200,
           headers: htmlHeaders,
         },
