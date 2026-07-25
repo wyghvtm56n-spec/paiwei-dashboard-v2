@@ -45,7 +45,7 @@ export default {
   fetchMetaAdsByAd(env),
       ]);
 
-      return new Response(
+ return new Response(
   renderDashboard({
     line,
     meta,
