@@ -248,6 +248,61 @@ export function renderDashboard(data) {
       ${card("CPC", `NT$${formatNumber(data.meta.summary.cpc, 2)}`, "Cost Per Click")}
     </div>
 <section class="panel" style="margin-bottom:18px;">
+  <h2>🏆 Meta 廣告排行榜（近 7 天）</h2>
+
+  ${
+    Array.isArray(data.ads?.data) && data.ads.data.length > 0
+      ? `
+        <table>
+          <thead>
+            <tr>
+              <th>廣告名稱</th>
+              <th>活動</th>
+              <th>花費</th>
+              <th>點擊</th>
+              <th>CTR</th>
+              <th>CPC</th>
+              <th>AI 建議</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            ${data.ads.data
+              .map((ad) => {
+                const ctr = Number(ad.ctr || 0);
+                const cpc = Number(ad.cpc || 0);
+                const spend = Number(ad.spend || 0);
+
+                let advice = "🟡 持續觀察";
+
+                if (ctr >= 4 && cpc > 0 && cpc <= 3) {
+                  advice = "🟢 表現佳，可考慮加碼";
+                } else if (ctr < 2 && spend >= 300) {
+                  advice = "🔴 表現偏弱，建議更換素材";
+                } else if (cpc > 6 && spend >= 300) {
+                  advice = "🔴 成本偏高，建議停投檢查";
+                }
+
+                return `
+                  <tr>
+                    <td>${escapeHtml(ad.ad_name || "未命名廣告")}</td>
+                    <td>${escapeHtml(ad.campaign_name || "-")}</td>
+                    <td>NT$${formatNumber(spend, 0)}</td>
+                    <td>${formatNumber(ad.clicks, 0)}</td>
+                    <td>${formatNumber(ctr, 2)}%</td>
+                    <td>NT$${formatNumber(cpc, 2)}</td>
+                    <td>${escapeHtml(advice)}</td>
+                  </tr>
+                `;
+              })
+              .join("")}
+          </tbody>
+        </table>
+      `
+      : `<div class="notice">目前沒有可顯示的個別廣告資料。</div>`
+  }
+</section>
+<section class="panel" style="margin-bottom:18px;">
   <h2>AI 廣告健康度</h2>
 
   ${
