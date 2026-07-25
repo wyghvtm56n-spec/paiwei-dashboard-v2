@@ -60,3 +60,4 @@ Meta 每日 JSON：
 ```text
 /meta/ads
 ```
+npx wrangler deploy
