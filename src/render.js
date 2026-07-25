@@ -247,7 +247,85 @@ export function renderDashboard(data) {
       ${card("CTR", `${formatNumber(data.meta.summary.ctr, 2)}%`, "Click Through Rate")}
       ${card("CPC", `NT$${formatNumber(data.meta.summary.cpc, 2)}`, "Cost Per Click")}
     </div>
+<section class="panel" style="margin-bottom:18px;">
+  <h2>AI 廣告健康度</h2>
 
+  ${
+    (() => {
+      const ctr = Number(data.meta.summary.ctr || 0);
+      const cpc = Number(data.meta.summary.cpc || 0);
+
+      let score = 50;
+      const notes = [];
+
+      if (ctr >= 4) {
+        score += 25;
+        notes.push("CTR 高於 4%，素材吸引力良好");
+      } else if (ctr >= 3) {
+        score += 18;
+        notes.push("CTR 表現穩定");
+      } else if (ctr >= 2) {
+        score += 8;
+        notes.push("CTR 尚可，仍有優化空間");
+      } else {
+        score -= 15;
+        notes.push("CTR 偏低，建議測試新素材");
+      }
+
+      if (cpc > 0 && cpc <= 3) {
+        score += 20;
+        notes.push("CPC 低於 NT$3，點擊成本漂亮");
+      } else if (cpc <= 5) {
+        score += 10;
+        notes.push("CPC 在可接受範圍");
+      } else {
+        score -= 10;
+        notes.push("CPC 偏高，建議檢查素材與受眾");
+      }
+
+      score = Math.max(0, Math.min(100, score));
+
+      const status =
+        score >= 85
+          ? "表現優秀，建議維持投放"
+          : score >= 70
+            ? "表現良好，可持續觀察"
+            : score >= 55
+              ? "表現普通，暫時不要加碼"
+              : "需要調整，建議更新素材";
+
+      return `
+        <div style="
+          display:grid;
+          grid-template-columns:160px 1fr;
+          gap:20px;
+          align-items:center;
+        ">
+          <div style="
+            text-align:center;
+            padding:24px;
+            background:#f8fafc;
+            border-radius:14px;
+          ">
+            <div style="font-size:54px;font-weight:700;">
+              ${score}
+            </div>
+            <div style="color:#64748b;">健康分數／100</div>
+          </div>
+
+          <div>
+            <div style="font-size:22px;font-weight:700;margin-bottom:10px;">
+              ${status}
+            </div>
+            <ul style="margin:0;padding-left:20px;line-height:1.8;">
+              ${notes.map((note) => `<li>${note}</li>`).join("")}
+            </ul>
+          </div>
+        </div>
+      `;
+    })()
+  }
+</section>
     <section class="panel" style="margin-bottom:18px;">
       <h2>Meta 廣告近 7 天趨勢</h2>
       <div class="chart-wrap">
