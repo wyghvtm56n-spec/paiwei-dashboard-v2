@@ -51,6 +51,7 @@ export default {
   meta,
   ads,
 }),
+        {
           status: 200,
           headers: htmlHeaders,
         },
