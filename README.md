@@ -1,63 +1,32 @@
-# Paiwei Dashboard v2
+# Paiwei AI Center
 
-派威 LINE 與 Meta Ads 營運 Dashboard。
+Cloudflare Workers Dashboard，整合 LINE D1 統計與 Meta Ads Insights。
 
-## 專案結構
+## 目前功能
 
-```text
-src/
-├── worker.js   路由與資料整合
-├── line.js     LINE / D1 統計
-├── meta.js     Meta Ads API
-└── render.js   Dashboard 畫面與 Chart.js
-```
-
-## Cloudflare 必要設定
-
-### D1 Binding
-
-Binding 名稱：
-
-```text
-DB
-```
-
-請把 `wrangler.toml` 中的 D1 名稱與 ID 換成目前使用中的值。
-
-### Variables and Secrets
-
-Variable：
-
-```text
-meta_ad_account_id
-```
-
-Secret：
-
-```text
-META_ACCESS_TOKEN
-```
-
-請勿把 Meta Access Token 寫進 GitHub。
-
-## 部署
-
-```bash
-npm install
-npm run deploy
-```
+- LINE 訊息、人數、好友、封鎖、圖片、Postback 統計
+- Meta 近 7 天花費、曝光、觸及、點擊、CTR、CPC、頻率
+- 個別廣告排行榜與素材類型分析
+- Meta 縣市、年齡／性別、平台／版位 Breakdown
+- AI 廣告健康度與唯讀建議
 
 ## 路由
 
-Dashboard：
+- `/`：營運 Dashboard
+- `/meta/ads`：Meta 每日資料 JSON
+- `/meta/breakdowns`：Meta 區域、人口、版位 Breakdown JSON
 
-```text
-/
+## Cloudflare Bindings
+
+- D1：`DB`
+- Variable：`meta_ad_account_id`
+- Secret：`META_ACCESS_TOKEN`
+
+## 指令
+
+```bash
+npm install
+npm run check
+npm run dev
+npm run deploy
 ```
-
-Meta 每日 JSON：
-
-```text
-/meta/ads
-```
-npx wrangler deploy

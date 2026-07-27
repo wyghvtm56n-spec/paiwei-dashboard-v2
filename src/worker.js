@@ -1,5 +1,9 @@
 import { fetchLineDashboard } from "./line.js";
-import { fetchMetaDaily, fetchMetaAdsByAd  } from "./meta.js";
+import {
+  fetchMetaDaily,
+  fetchMetaAdsByAd,
+  fetchMetaBreakdowns,
+} from "./meta.js";
 import { renderDashboard } from "./render.js";
 
 const htmlHeaders = {
@@ -15,6 +19,13 @@ const htmlHeaders = {
   "x-frame-options": "DENY",
 };
 
+function jsonResponse(payload, status = 200) {
+  return Response.json(payload, {
+    status,
+    headers: { "cache-control": "no-store" },
+  });
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -22,7 +33,7 @@ export default {
     if (request.method === "GET" && url.pathname === "/meta/ads") {
       const meta = await fetchMetaDaily(env);
 
-      return Response.json(
+      return jsonResponse(
         {
           ok: meta.ok,
           period: "last_7d",
@@ -30,8 +41,18 @@ export default {
           data: meta.daily,
           summary: meta.summary,
         },
-        { status: meta.ok ? 200 : 500 },
+        meta.ok ? 200 : 500,
       );
+    }
+
+    if (request.method === "GET" && url.pathname === "/meta/breakdowns") {
+      const breakdowns = await fetchMetaBreakdowns(env);
+      const ok =
+        breakdowns.regions.ok ||
+        breakdowns.demographics.ok ||
+        breakdowns.placements.ok;
+
+      return jsonResponse({ ok, ...breakdowns }, ok ? 200 : 500);
     }
 
     if (request.method !== "GET" || url.pathname !== "/") {
@@ -39,23 +60,25 @@ export default {
     }
 
     try {
-      const [line, meta, ads] = await Promise.all([
+      const [line, meta, ads, breakdowns] = await Promise.all([
         fetchLineDashboard(env),
-  fetchMetaDaily(env),
-  fetchMetaAdsByAd(env),
+        fetchMetaDaily(env),
+        fetchMetaAdsByAd(env),
+        fetchMetaBreakdowns(env),
       ]);
 
- return new Response(
-  renderDashboard({
-    line,
-    meta,
-    ads,
-  }),
-  {
-    status: 200,
-    headers: htmlHeaders,
-  },
-);
+      return new Response(
+        renderDashboard({
+          line,
+          meta,
+          ads,
+          breakdowns,
+        }),
+        {
+          status: 200,
+          headers: htmlHeaders,
+        },
+      );
     } catch (error) {
       console.error(error);
 
