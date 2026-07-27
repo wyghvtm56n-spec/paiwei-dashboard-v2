@@ -176,7 +176,7 @@ function renderRegionAnalysis(breakdowns, accountSummary) {
         : `<div class="insight-callout muted">目前各縣市樣本仍少，先累積資料再決定預算。</div>`
     }
 
-    <div class="table-wrap">
+    <div class="table-wrap mobile-cards">
       <table>
         <thead>
           <tr>
@@ -196,14 +196,14 @@ function renderRegionAnalysis(breakdowns, accountSummary) {
               const advice = performanceAdvice(row, accountSummary);
               return `
                 <tr>
-                  <td><strong>${escapeHtml(translateRegion(row.region))}</strong></td>
-                  <td>NT$${formatNumber(row.spend, 0)}</td>
-                  <td>${formatNumber(row.reach, 0)}</td>
-                  <td>${formatNumber(row.clicks, 0)}</td>
-                  <td>${formatNumber(row.ctr, 2)}%</td>
-                  <td>NT$${formatNumber(row.cpc, 2)}</td>
-                  <td>${formatNumber(row.frequency, 2)}</td>
-                  <td><span class="status ${advice.className}">${escapeHtml(advice.label)}</span></td>
+                  <td data-label="縣市"><strong>${escapeHtml(translateRegion(row.region))}</strong></td>
+                  <td data-label="花費">NT$${formatNumber(row.spend, 0)}</td>
+                  <td data-label="觸及">${formatNumber(row.reach, 0)}</td>
+                  <td data-label="點擊">${formatNumber(row.clicks, 0)}</td>
+                  <td data-label="CTR">${formatNumber(row.ctr, 2)}%</td>
+                  <td data-label="CPC">NT$${formatNumber(row.cpc, 2)}</td>
+                  <td data-label="頻率">${formatNumber(row.frequency, 2)}</td>
+                  <td data-label="系統判斷"><span class="status ${advice.className}">${escapeHtml(advice.label)}</span></td>
                 </tr>
               `;
             })
@@ -232,16 +232,18 @@ function renderDemographics(breakdowns) {
   }
 
   return `
-    <div class="table-wrap compact-table">
+    <div class="table-wrap compact-table mobile-cards">
       <table>
         <thead>
           <tr>
             <th>年齡</th>
             <th>性別</th>
             <th>花費</th>
+            <th>觸及</th>
             <th>點擊</th>
             <th>CTR</th>
             <th>CPC</th>
+            <th>頻率</th>
           </tr>
         </thead>
         <tbody>
@@ -249,12 +251,14 @@ function renderDemographics(breakdowns) {
             .map(
               (row) => `
                 <tr>
-                  <td>${escapeHtml(row.age || "未標示")}</td>
-                  <td>${escapeHtml(translateGender(row.gender))}</td>
-                  <td>NT$${formatNumber(row.spend, 0)}</td>
-                  <td>${formatNumber(row.clicks, 0)}</td>
-                  <td>${formatNumber(row.ctr, 2)}%</td>
-                  <td>NT$${formatNumber(row.cpc, 2)}</td>
+                  <td data-label="年齡">${escapeHtml(row.age || "未標示")}</td>
+                  <td data-label="性別">${escapeHtml(translateGender(row.gender))}</td>
+                  <td data-label="花費">NT$${formatNumber(row.spend, 0)}</td>
+                  <td data-label="觸及">${formatNumber(row.reach, 0)}</td>
+                  <td data-label="點擊">${formatNumber(row.clicks, 0)}</td>
+                  <td data-label="CTR">${formatNumber(row.ctr, 2)}%</td>
+                  <td data-label="CPC">NT$${formatNumber(row.cpc, 2)}</td>
+                  <td data-label="頻率">${formatNumber(row.frequency, 2)}</td>
                 </tr>
               `,
             )
@@ -283,16 +287,18 @@ function renderPlacements(breakdowns) {
   }
 
   return `
-    <div class="table-wrap compact-table">
+    <div class="table-wrap compact-table mobile-cards">
       <table>
         <thead>
           <tr>
             <th>平台</th>
             <th>版位</th>
             <th>花費</th>
+            <th>觸及</th>
             <th>點擊</th>
             <th>CTR</th>
             <th>CPC</th>
+            <th>頻率</th>
           </tr>
         </thead>
         <tbody>
@@ -300,12 +306,14 @@ function renderPlacements(breakdowns) {
             .map(
               (row) => `
                 <tr>
-                  <td>${escapeHtml(translatePlatform(row.publisher_platform))}</td>
-                  <td>${escapeHtml(translatePosition(row.platform_position))}</td>
-                  <td>NT$${formatNumber(row.spend, 0)}</td>
-                  <td>${formatNumber(row.clicks, 0)}</td>
-                  <td>${formatNumber(row.ctr, 2)}%</td>
-                  <td>NT$${formatNumber(row.cpc, 2)}</td>
+                  <td data-label="平台">${escapeHtml(translatePlatform(row.publisher_platform))}</td>
+                  <td data-label="版位" class="wrap-text">${escapeHtml(translatePosition(row.platform_position))}</td>
+                  <td data-label="花費">NT$${formatNumber(row.spend, 0)}</td>
+                  <td data-label="觸及">${formatNumber(row.reach, 0)}</td>
+                  <td data-label="點擊">${formatNumber(row.clicks, 0)}</td>
+                  <td data-label="CTR">${formatNumber(row.ctr, 2)}%</td>
+                  <td data-label="CPC">NT$${formatNumber(row.cpc, 2)}</td>
+                  <td data-label="頻率">${formatNumber(row.frequency, 2)}</td>
                 </tr>
               `,
             )
@@ -338,13 +346,13 @@ function renderAdTableRows(ads) {
     .map(
       (ad) => `
         <tr>
-          <td>${escapeHtml(ad.ad_name || "未命名廣告")}</td>
-          <td>${escapeHtml(ad.campaign_name || "-")}</td>
-          <td>NT$${formatNumber(ad.spend, 0)}</td>
-          <td>${formatNumber(ad.clicks, 0)}</td>
-          <td>${formatNumber(ad.ctr, 2)}%</td>
-          <td>NT$${formatNumber(ad.cpc, 2)}</td>
-          <td>${escapeHtml(adAdvice(ad))}</td>
+          <td data-label="廣告名稱" class="wrap-text"><strong>${escapeHtml(ad.ad_name || "未命名廣告")}</strong></td>
+          <td data-label="活動" class="wrap-text">${escapeHtml(ad.campaign_name || "-")}</td>
+          <td data-label="花費">NT$${formatNumber(ad.spend, 0)}</td>
+          <td data-label="點擊">${formatNumber(ad.clicks, 0)}</td>
+          <td data-label="CTR">${formatNumber(ad.ctr, 2)}%</td>
+          <td data-label="CPC">NT$${formatNumber(ad.cpc, 2)}</td>
+          <td data-label="AI 建議" class="wrap-text">${escapeHtml(adAdvice(ad))}</td>
         </tr>
       `,
     )
@@ -384,7 +392,7 @@ function renderAdRanking(adsResult) {
   `;
 
   return `
-    <div class="table-wrap">
+    <div class="table-wrap mobile-cards">
       <table>
         ${tableHeader}
         <tbody>${renderAdTableRows(topAds)}</tbody>
@@ -394,7 +402,7 @@ function renderAdRanking(adsResult) {
       remainingAds.length > 0
         ? `<details class="more-ads">
             <summary>查看其餘 ${remainingAds.length} 支廣告</summary>
-            <div class="table-wrap">
+            <div class="table-wrap mobile-cards">
               <table>
                 ${tableHeader}
                 <tbody>${renderAdTableRows(remainingAds)}</tbody>
@@ -713,7 +721,7 @@ export function renderDashboard(data) {
       gap: 18px;
     }
 
-    .table-wrap { overflow-x: auto; }
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
     table { width: 100%; border-collapse: collapse; }
     th, td {
       padding: 10px 8px;
@@ -722,7 +730,8 @@ export function renderDashboard(data) {
       white-space: nowrap;
     }
     th { color: #6b7280; font-size: 13px; }
-    .compact-table table { min-width: 620px; }
+    .compact-table table { min-width: 760px; }
+    .wrap-text { white-space: normal; overflow-wrap: anywhere; min-width: 150px; }
 
     .chart-wrap { position: relative; height: 380px; }
     .notice {
@@ -781,11 +790,51 @@ export function renderDashboard(data) {
     footer { margin-top: 22px; color: #6b7280; font-size: 13px; line-height: 1.7; }
 
     @media (max-width: 640px) {
-      body { padding: 14px; }
+      body { padding: 12px; }
       h1 { font-size: 23px; }
+      h2 { font-size: 18px; }
+      .panel { padding: 16px; }
       .chart-wrap { height: 320px; }
       .health-layout { grid-template-columns: 1fr; }
       .breakdown-grid { grid-template-columns: 1fr; }
+      .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+      .card { padding: 14px; }
+      .card-value { font-size: 25px; }
+
+      .mobile-cards table,
+      .mobile-cards thead,
+      .mobile-cards tbody,
+      .mobile-cards tr,
+      .mobile-cards th,
+      .mobile-cards td { display: block; width: 100%; }
+      .mobile-cards thead { display: none; }
+      .mobile-cards table { min-width: 0; }
+      .mobile-cards tr {
+        margin-bottom: 12px;
+        padding: 12px 14px;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        background: #fff;
+      }
+      .mobile-cards td {
+        display: grid;
+        grid-template-columns: minmax(88px, 38%) 1fr;
+        gap: 10px;
+        padding: 7px 0;
+        border-bottom: 1px dashed #e5e7eb;
+        white-space: normal;
+        text-align: right;
+        overflow-wrap: anywhere;
+      }
+      .mobile-cards td:last-child { border-bottom: 0; }
+      .mobile-cards td::before {
+        content: attr(data-label);
+        color: #6b7280;
+        font-size: 13px;
+        font-weight: 700;
+        text-align: left;
+      }
+      .more-ads .table-wrap { margin-top: 8px; }
     }
   </style>
 
@@ -795,7 +844,7 @@ export function renderDashboard(data) {
   <main>
     <header>
       <h1>派威營運 Dashboard</h1>
-      <div class="updated">更新時間：${escapeHtml(updatedAt)}｜版本 1.3.0</div>
+      <div class="updated">更新時間：${escapeHtml(updatedAt)}｜版本 1.4.0</div>
     </header>
 
     <div class="cards">
