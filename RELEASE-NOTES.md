@@ -1,4 +1,4 @@
-# Martin Decision Center v2.0.0
+# Martin Decision Center v2.1.0
 
 ## 決策可信度
 
@@ -14,11 +14,17 @@ Meta API 已升級為 v26.0，並加入八秒逾時、針對 429／5xx 的有限
 
 首頁重新設計為 Martin Decision Center。桌面首屏可直接看到決策摘要、三項工作、異常與測試機會；手機版廣告與區域只預設顯示前三項，其餘收合。素材分類改為單欄卡片，Amount spent 與效率趨勢分成兩張圖，平台／版位名稱也改為一般經營者可理解的文字。
 
+## 粉專與 Instagram 影片洞察
+
+新增獨立的內容資料層與 `/content/videos` 路由。Facebook 粉專使用 Page access token 讀取 `/PAGE_ID/videos` 與 `/VIDEO_ID/video_insights`；Instagram 使用 Facebook User access token 讀取連結的 Professional Account Media 與 `/INSTAGRAM_MEDIA_ID/insights`。內容 Token 與現有 Ads Token 分離，避免自然內容互動與廣告投放指標混用。
+
+儀表板新增粉專影片與 Instagram Feed／Reels 卡片，顯示 views、reach、likes、comments、shares、saved、total_interactions；Reels 另顯示平均觀看時間、總觀看時間與前三秒跳過率。若 API 沒有資料，顯示 N/A 而不是補成 0；Instagram 洞察可能延遲最多 48 小時，首版排除 Story。
+
 ## 安全與測試
 
 新增可選的 `DASHBOARD_PASSWORD` 與 `COOKIE_SIGNING_KEY` Cloudflare Secrets。設定後，首頁與商業資料 JSON 路由會要求密碼登入，登入 Cookie 使用 HttpOnly、Secure 與 SameSite=Lax。Worker 同時加入 Content Security Policy、禁止 iframe、no-referrer 與權限限制標頭。
 
-新增八項自動化測試，涵蓋完整日趨勢、樣本門檻、不輸出加碼／停投指令、向下相容、登入 Cookie、錯誤密碼與安全標頭。
+新增十項自動化測試，涵蓋完整日趨勢、樣本門檻、不輸出加碼／停投指令、向下相容、登入 Cookie、錯誤密碼、安全標頭，以及粉專／Instagram 影片資料正規化。
 
 ---
 

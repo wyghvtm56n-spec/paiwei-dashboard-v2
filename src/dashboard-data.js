@@ -1,4 +1,5 @@
 import { buildDecisionSnapshot } from "./decision.js";
+import { fetchContentDashboard } from "./content.js";
 import { fetchLineDashboard } from "./line.js";
 import {
   fetchMetaAdsByAd,
@@ -26,12 +27,13 @@ function emptyLine(error = null) {
 }
 
 async function loadFresh(env) {
-  const [lineResult, metaResult, adsResult, breakdownResult] =
+  const [lineResult, metaResult, adsResult, breakdownResult, contentResult] =
     await Promise.allSettled([
       fetchLineDashboard(env),
       fetchMetaDaily(env),
       fetchMetaAdsByAd(env),
       fetchMetaBreakdowns(env),
+      fetchContentDashboard(env),
     ]);
 
   const line =
@@ -74,11 +76,24 @@ async function loadFresh(env) {
           placements: { ok: false, error: String(breakdownResult.reason || "Placement data failed"), data: [] },
         };
 
+  const content =
+    contentResult.status === "fulfilled"
+      ? contentResult.value
+      : {
+          ok: false,
+          configured: false,
+          error: String(contentResult.reason || "Content data failed"),
+          page: { ok: false, error: "Content data failed", data: [], dataQuality: {} },
+          instagram: { ok: false, error: "Content data failed", data: [], dataQuality: {} },
+          dataQuality: { complete: false, partial: false },
+        };
+
   const data = {
     line,
     meta,
     ads,
     breakdowns,
+    content,
     generatedAt: new Date().toISOString(),
   };
 

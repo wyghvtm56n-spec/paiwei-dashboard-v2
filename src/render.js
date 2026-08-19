@@ -1,4 +1,5 @@
 import { buildDecisionSnapshot } from "./decision.js";
+import { renderContentSection } from "./content-render.js";
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -600,6 +601,12 @@ function renderDataQuality(data) {
   const warnings = [];
   if (!data.meta?.ok) warnings.push(`Meta 摘要：${data.meta?.error || "讀取失敗"}`);
   if (!data.ads?.ok) warnings.push(`廣告：${data.ads?.error || "讀取失敗"}`);
+  if (data.content?.configured && !data.content?.ok) {
+    warnings.push(`內容洞察：${data.content?.error || "讀取失敗"}`);
+  }
+  if (data.content?.dataQuality?.partial) {
+    warnings.push("粉專或 Instagram 內容只有部分資料可用，請檢查 Token 與帳號權限。");
+  }
   if (data.meta?.dataQuality?.pageLimitReached) {
     warnings.push("Meta 每日或摘要資料達到分頁上限，請確認完整性。");
   }
@@ -761,6 +768,30 @@ export function renderDashboard(data) {
     .quality-ok { background: #eef8f5; color: #25634f; border: 1px solid #d4eee6; }
     .quality-warning { background: #fff8e8; color: #7c5318; border: 1px solid #f3e1ae; }
     .quality-warning ul { margin-bottom: 0; }
+    .content-panel-heading { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+    .content-list { display: grid; gap: 10px; }
+    .content-card { padding: 14px; border: 1px solid #e4eaf2; border-radius: 14px; background: #fbfcfe; }
+    .content-card-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+    .content-card-head strong, .content-card-head small { display: block; }
+    .content-card-head strong { margin-top: 7px; max-width: 470px; line-height: 1.5; }
+    .content-card-head small { margin-top: 5px; color: #8894a5; font-size: 10px; }
+    .content-badges { display: flex; flex-wrap: wrap; gap: 6px; }
+    .content-source, .content-type { display: inline-flex; padding: 4px 7px; border-radius: 7px; font-size: 10px; font-weight: 800; }
+    .content-source { background: #e4f1fb; color: #145b83; }
+    .content-type { background: #eef1f5; color: #5d6c80; }
+    .content-link { padding: 5px 7px; border-radius: 7px; color: #176fa3; font-size: 11px; font-weight: 800; text-decoration: none; white-space: nowrap; }
+    .content-link:hover { background: #e4f1fb; }
+    .content-metrics { display: grid; grid-template-columns: repeat(6,minmax(0,1fr)); gap: 8px; margin-top: 14px; }
+    .content-metrics span { min-width: 0; }
+    .content-metrics small, .content-extra { display: block; color: #8b96a7; font-size: 9px; }
+    .content-metrics b { display: block; margin-top: 3px; font-size: 12px; overflow-wrap: anywhere; }
+    .content-extra { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; padding-top: 10px; border-top: 1px solid #edf1f6; }
+    .content-error { margin: 10px 0 0; color: #8a4b05; font-size: 11px; line-height: 1.5; }
+    .content-setup-panel { border-left: 4px solid #176fa3; }
+    .setup-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+    .setup-grid span { padding: 12px; border-radius: 10px; background: #f7fafc; border: 1px solid #e6edf4; }
+    .setup-grid b, .setup-grid small { display: block; }
+    .setup-grid small { margin-top: 5px; color: #7c899b; line-height: 1.5; font-size: 11px; }
     .notice { padding: 14px 15px; border-radius: 12px; font-size: 12px; line-height: 1.65; }
     .notice.warning { background: #fff8e8; color: #7c5318; }
     .notice.neutral { background: #f1f4f8; color: #5f6d82; }
@@ -804,6 +835,10 @@ export function renderDashboard(data) {
       .material-grid { grid-template-columns: 1fr; }
       .chart { height: 250px; }
       .breakdown-item { grid-template-columns: 1fr; }
+      .content-metrics { grid-template-columns: repeat(3,minmax(0,1fr)); }
+      .setup-grid { grid-template-columns: 1fr; }
+      .content-card-head { display: block; }
+      .content-link { display: inline-flex; margin-top: 10px; }
     }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -815,12 +850,12 @@ export function renderDashboard(data) {
         <div class="brand-mark">MD</div>
         <div><strong>Martin Decision Center</strong><span>派威營運決策中心</span></div>
       </div>
-      <div class="updated">更新時間：${escapeHtml(updatedAt)}<br>版本 2.0.0</div>
+      <div class="updated">更新時間：${escapeHtml(updatedAt)}<br>版本 2.1.0</div>
     </header>
 
     <nav class="section-nav" aria-label="儀表板區段">
       <a href="#overview">今日摘要</a><a href="#metrics">核心指標</a><a href="#ads">廣告</a>
-      <a href="#audience">受眾</a><a href="#line">LINE</a><a href="#data-quality">資料品質</a>
+      <a href="#audience">受眾</a><a href="#line">LINE</a><a href="#content-videos">內容</a><a href="#data-quality">資料品質</a>
     </nav>
 
     ${renderDecisionPanel(decision, currency)}
@@ -871,6 +906,8 @@ export function renderDashboard(data) {
         <section class="panel"><h3>近 30 天常見需求</h3><p class="panel-subtitle">依關鍵字規則整理。</p>${renderLineDemand(data.line?.categories)}</section>
       </div>
     </section>
+
+    ${renderContentSection(data.content)}
 
     <section class="section" id="data-quality">
       <div class="section-head"><div><h2>資料品質</h2><p>明確顯示資料限制，避免把流量效率誤解為成交結果。</p></div></div>

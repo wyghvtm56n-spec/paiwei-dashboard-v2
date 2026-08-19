@@ -12,6 +12,13 @@ database_id = "a7ce826e-a3b7-4076-8d9d-cc95a719824b"
 #
 # Required Cloudflare Secret:
 # META_ACCESS_TOKEN
+# META_CONTENT_PAGE_ACCESS_TOKEN
+# META_CONTENT_USER_ACCESS_TOKEN
+#
+# Content Variables:
+# META_CONTENT_PAGE_ID
+# META_CONTENT_IG_USER_ID (optional)
+# META_CONTENT_GRAPH_VERSION (optional; defaults to v26.0)
 #
 # Recommended security Secrets (must set both to enable dashboard login):
 # DASHBOARD_PASSWORD
