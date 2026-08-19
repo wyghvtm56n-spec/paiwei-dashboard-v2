@@ -62,6 +62,19 @@ npx wrangler secret put DASHBOARD_PASSWORD
 npx wrangler secret put COOKIE_SIGNING_KEY
 ```
 
+## 從 GitHub 執行部署
+
+儲存庫現在包含兩個 GitHub Actions：`Verify Dashboard` 會在 push／Pull Request 執行 `npm run verify`；`Deploy Cloudflare Worker` 只接受手動 `workflow_dispatch`，並使用 `production` environment。
+
+要讓 GitHub 能執行部署，需在 Repository Secrets 設定：
+
+```text
+CLOUDFLARE_API_TOKEN
+CLOUDFLARE_ACCOUNT_ID
+```
+
+`CLOUDFLARE_API_TOKEN` 應只授予目標帳號的 Workers Scripts 編輯權限；`CLOUDFLARE_ACCOUNT_ID` 是 Cloudflare Account ID。粉專／Instagram 的 `META_CONTENT_*` Secrets 不需要複製到 GitHub，仍留在 Cloudflare Worker Secret 中，由部署後的 Worker 讀取。
+
 ## 本機檢查與部署
 
 ```bash
