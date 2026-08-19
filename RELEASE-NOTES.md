@@ -1,3 +1,27 @@
+# Martin Decision Center v2.0.0
+
+## 決策可信度
+
+v2.0.0 移除舊版互相矛盾的 AI 戰情室分數與廣告健康分數，改為單一規則式決策摘要。系統現在只顯示今日三件事、需要檢查的訊號與測試候選，並明確列出資料證據、樣本門檻與缺少預約／成交／營收的限制。沒有成交資料時，不再輸出加碼或停投指令。
+
+## 指標與資料品質
+
+Meta 指標改用精確名稱 Amount spent、Impressions、Reach、Clicks (all)、CTR (all)、CPC (all) 與 Frequency。Reach 與 Frequency 取自 Meta 區間 aggregate；若 aggregate 無法取得，介面顯示 N/A，不會把每日 Reach 相加。趨勢比較只使用最近三個完整日與前面三個完整日，避免今天未結束資料造成誤判。
+
+Meta API 已升級為 v26.0，並加入八秒逾時、針對 429／5xx 的有限重試、Bearer Authorization header、分頁完整性狀態與五分鐘快取。LINE、Meta 摘要、廣告或 Breakdown 任一來源失敗時，其餘區塊仍可顯示。
+
+## 介面
+
+首頁重新設計為 Martin Decision Center。桌面首屏可直接看到決策摘要、三項工作、異常與測試機會；手機版廣告與區域只預設顯示前三項，其餘收合。素材分類改為單欄卡片，Amount spent 與效率趨勢分成兩張圖，平台／版位名稱也改為一般經營者可理解的文字。
+
+## 安全與測試
+
+新增可選的 `DASHBOARD_PASSWORD` 與 `COOKIE_SIGNING_KEY` Cloudflare Secrets。設定後，首頁與商業資料 JSON 路由會要求密碼登入，登入 Cookie 使用 HttpOnly、Secure 與 SameSite=Lax。Worker 同時加入 Content Security Policy、禁止 iframe、no-referrer 與權限限制標頭。
+
+新增八項自動化測試，涵蓋完整日趨勢、樣本門檻、不輸出加碼／停投指令、向下相容、登入 Cookie、錯誤密碼與安全標頭。
+
+---
+
 # Paiwei AI Center v1.4.0
 
 ## 本次更新
