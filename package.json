@@ -1,10 +1,10 @@
 {
   "name": "paiwei-dashboard-v2",
-  "version": "2.3.0",
+  "version": "2.4.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "check": "node --check src/worker.js && node --check src/auth.js && node --check src/dashboard-data.js && node --check src/content.js && node --check src/content-render.js && node --check src/meta.js && node --check src/line.js && node --check src/decision.js && node --check src/render.js",
+    "check": "node --check src/worker.js && node --check src/auth.js && node --check src/dashboard-data.js && node --check src/content.js && node --check src/content-render.js && node --check src/message-center.js && node --check src/meta.js && node --check src/line.js && node --check src/decision.js && node --check src/render.js",
     "test": "node --test",
     "verify": "npm run check && npm test",
     "dev": "wrangler dev",

@@ -1,4 +1,8 @@
-# Martin Decision Center v2.3.0
+# Martin Decision Center v2.4.0
+
+## 訊息中心整合
+
+新增主頁「訊息中心」摘要與獨立 `/messages` 路由。頁面保留 LINE D1 的訊息趨勢、匿名詢問帳號、圖片／按鈕事件與關鍵字需求訊號，並提供 Meta Business Suite 與 LINE 管理後台入口。為避免誤把未同步資料當成已讀／未讀狀態，頁面不渲染姓名、電話或原始聊天內容；Meta／Messenger 對話仍以官方收件匣為準。
 
 ## Instagram Login API update
 
