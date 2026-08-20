@@ -14,6 +14,7 @@ import { renderDashboard } from "./render.js";
 import { renderMessagesPage } from "./message-center.js";
 import { fetchMessageCenterData } from "./message-data.js";
 import { handleMessageReply } from "./message-reply.js";
+import { refreshFacebookProfiles } from "./message-profile.js";
 
 const securityHeaders = {
   "content-security-policy":
@@ -99,6 +100,24 @@ export default {
       for (const [key, value] of Object.entries(securityHeaders)) headers.set(key, value);
       headers.set("cache-control", "no-store");
       return new Response(response.body, { status: response.status, headers });
+    }
+
+    if (request.method === "POST" && (url.pathname === "/messages/profile-refresh" || url.pathname === "/api/messages/profile-refresh")) {
+      const messageAuth = await getMessageAuthState(request, env);
+      if (!messageAuth.configured) {
+        return jsonResponse({ ok: false, code: "message_auth_not_configured", error: "訊息中心尚未完成安全設定。" }, 503, { "cache-control": "no-store" });
+      }
+      if (!messageAuth.authorized) {
+        return jsonResponse({ ok: false, code: "message_auth_required", error: "請先登入訊息中心。" }, 401, { "cache-control": "no-store" });
+      }
+      try {
+        const result = await refreshFacebookProfiles(request, env);
+        const { status = result.ok ? 200 : 500, ...payload } = result;
+        return jsonResponse(payload, status, { "cache-control": "no-store" });
+      } catch (error) {
+        console.error("Facebook profile refresh failed", error instanceof Error ? error.message : String(error));
+        return jsonResponse({ ok: false, code: "profile_refresh_failed", error: "Facebook 聯絡人同步暫時無法完成。" }, 500, { "cache-control": "no-store" });
+      }
     }
 
     if (request.method === "POST" && (url.pathname === "/messages/reply" || url.pathname === "/api/messages/reply")) {

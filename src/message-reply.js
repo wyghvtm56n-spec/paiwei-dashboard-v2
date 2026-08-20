@@ -79,7 +79,7 @@ async function deriveKeyCandidates(secret, keyVersion) {
   return candidates;
 }
 
-async function decryptTarget(row, secret) {
+export async function decryptTarget(row, secret) {
   if (!row?.target_ciphertext || !row?.target_iv) {
     throw new Error("找不到訊息投遞目標");
   }
@@ -138,7 +138,7 @@ async function fetchConversation(env, conversationKey) {
   return result || null;
 }
 
-async function fetchDeliveryTarget(env, conversationKey, platform) {
+export async function fetchDeliveryTarget(env, conversationKey, platform) {
   return env.DB.prepare(`
     SELECT conversation_key, platform, account_id, target_kind, target_ciphertext,
            target_iv, key_version, last_inbound_at, updated_at
