@@ -1,4 +1,8 @@
-# Martin Decision Center v2.1.0
+# Martin Decision Center v2.3.0
+
+## Instagram Login API update
+
+Instagram content integration now supports the official Instagram API with Instagram Login. It uses `META_IG_LOGIN_ACCESS_TOKEN`, `META_CONTENT_IG_USER_ID`, `graph.instagram.com`, and the `instagram_business_basic`／`instagram_business_manage_insights` permissions. The previous Facebook Login path remains available as a fallback. Reels metrics include views, reach, likes, comments, shares, saved, total interactions, average watch time, total watch time, and skip rate when Meta returns them; Insights can be delayed by up to 48 hours.
 
 ## 決策可信度
 

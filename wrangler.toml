@@ -17,7 +17,8 @@ database_id = "a7ce826e-a3b7-4076-8d9d-cc95a719824b"
 # Required Cloudflare Secret:
 # META_ACCESS_TOKEN
 # META_CONTENT_PAGE_ACCESS_TOKEN
-# META_CONTENT_USER_ACCESS_TOKEN
+# META_IG_LOGIN_ACCESS_TOKEN (Instagram Login; preferred)
+# META_CONTENT_USER_ACCESS_TOKEN (Facebook Login fallback)
 # INSTAGRAM_ACCESS_TOKEN (legacy fallback; keep in Cloudflare Secret)
 #
 # Content Variables:
