@@ -217,3 +217,46 @@ test("Instagram Login 使用新版 host 與 User Token 讀取 Reels", async () =
     globalThis.fetch = originalFetch;
   }
 });
+
+
+test("Facebook 粉專 30 筆影片會逐筆讀取 video_insights", async () => {
+  const originalFetch = globalThis.fetch;
+  let insightCalls = 0;
+  globalThis.fetch = async (input) => {
+    const url = new URL(typeof input === "string" ? input : input.url);
+    const path = url.pathname;
+    if (path.endsWith("/page-30/videos")) {
+      return Response.json({
+        data: Array.from({ length: 30 }, (_, index) => ({
+          id: `video-${index + 1}`,
+          description: `影片 ${index + 1}`,
+          updated_time: "2026-08-19T00:00:00+0000",
+        })),
+      });
+    }
+    if (/\/video-\d+\/video_insights$/.test(path)) {
+      insightCalls += 1;
+      return Response.json({
+        data: [
+          { name: "total_video_views", values: [{ value: 100 + insightCalls }] },
+          { name: "total_video_views_unique", values: [{ value: 80 + insightCalls }] },
+        ],
+      });
+    }
+    return Response.json({ error: { message: `unexpected ${path}` } }, { status: 404 });
+  };
+
+  try {
+    const result = await fetchContentDashboard({
+      META_CONTENT_PAGE_ID: "page-30",
+      META_CONTENT_PAGE_ACCESS_TOKEN: "page-token",
+    });
+    assert.equal(result.page.data.length, 30);
+    assert.equal(insightCalls, 30);
+    assert.equal(result.page.dataQuality.insightSkipped, 0);
+    assert.equal(result.page.dataQuality.complete, true);
+    assert.equal(result.page.data[29].insights.total_video_views.value, 130);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});

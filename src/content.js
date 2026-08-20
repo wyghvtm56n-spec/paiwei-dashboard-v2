@@ -6,7 +6,8 @@ const MAX_IG_MEDIA = 30;
 const MAX_RETRIES = 2;
 const REQUEST_TIMEOUT_MS = 8_000;
 const INSIGHTS_BATCH_SIZE = 4;
-const MAX_INSIGHT_MEDIA = 4;
+const MAX_PAGE_INSIGHT_MEDIA = MAX_PAGE_VIDEOS;
+const MAX_INSTAGRAM_INSIGHT_MEDIA = 4;
 const INSIGHTS_SKIPPED_MESSAGE = "為控制單次請求量，完整洞察延後讀取";
 const PAGE_VIDEO_FIELDS = "id,description,created_time,updated_time,permalink_url,views,likes.summary(true),comments.summary(true),shares";
 const PAGE_VIDEO_BASIC_FIELDS = "id,description,created_time,updated_time,permalink_url";
@@ -280,7 +281,7 @@ async function fetchPageVideos(env) {
   let inspectedCount = 0;
   for (let index = 0; index < result.data.length; index += INSIGHTS_BATCH_SIZE) {
     const batch = result.data.slice(index, index + INSIGHTS_BATCH_SIZE);
-    const inspectCount = Math.max(0, Math.min(batch.length, MAX_INSIGHT_MEDIA - inspectedCount));
+    const inspectCount = Math.max(0, Math.min(batch.length, MAX_PAGE_INSIGHT_MEDIA - inspectedCount));
     const inspectBatch = batch.slice(0, inspectCount);
     data.push(...(await Promise.all(inspectBatch.map((video) => fetchPageVideoInsights(cfg.graphVersion, video, cfg.pageToken)))));
     data.push(...batch.slice(inspectCount).map(skippedPageVideo));
@@ -410,7 +411,7 @@ async function fetchInstagramMedia(env) {
   let inspectedCount = 0;
   for (let index = 0; index < result.data.length; index += INSIGHTS_BATCH_SIZE) {
     const batch = result.data.slice(index, index + INSIGHTS_BATCH_SIZE);
-    const inspectCount = Math.max(0, Math.min(batch.length, MAX_INSIGHT_MEDIA - inspectedCount));
+    const inspectCount = Math.max(0, Math.min(batch.length, MAX_INSTAGRAM_INSIGHT_MEDIA - inspectedCount));
     const inspectBatch = batch.slice(0, inspectCount);
     data.push(...(await Promise.all(inspectBatch.map((media) => fetchInstagramMediaInsights(cfg.graphVersion, media, token, host)))));
     data.push(...batch.slice(inspectCount).map(skippedInstagramMedia));

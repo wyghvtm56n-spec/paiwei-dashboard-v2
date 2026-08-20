@@ -13,6 +13,7 @@ import { fetchDashboardData } from "./dashboard-data.js";
 import { renderDashboard } from "./render.js";
 import { renderMessagesPage } from "./message-center.js";
 import { fetchMessageCenterData } from "./message-data.js";
+import { handleMessageReply } from "./message-reply.js";
 
 const securityHeaders = {
   "content-security-policy":
@@ -98,6 +99,24 @@ export default {
       for (const [key, value] of Object.entries(securityHeaders)) headers.set(key, value);
       headers.set("cache-control", "no-store");
       return new Response(response.body, { status: response.status, headers });
+    }
+
+    if (request.method === "POST" && (url.pathname === "/messages/reply" || url.pathname === "/api/messages/reply")) {
+      const messageAuth = await getMessageAuthState(request, env);
+      if (!messageAuth.configured) {
+        return jsonResponse({ ok: false, code: "message_auth_not_configured", error: "訊息中心尚未完成安全設定。" }, 503, { "cache-control": "no-store" });
+      }
+      if (!messageAuth.authorized) {
+        return jsonResponse({ ok: false, code: "message_auth_required", error: "請先登入訊息中心。" }, 401, { "cache-control": "no-store" });
+      }
+      try {
+        const result = await handleMessageReply(request, env);
+        const { status = result.ok ? 200 : 500, ...payload } = result;
+        return jsonResponse(payload, status, { "cache-control": "no-store" });
+      } catch (error) {
+        console.error("Message reply request failed", error instanceof Error ? error.message : String(error));
+        return jsonResponse({ ok: false, code: "reply_failed", error: "回覆服務暫時無法完成，訊息未確認送出。" }, 500, { "cache-control": "no-store" });
+      }
     }
 
     if (request.method === "GET" && (url.pathname === "/messages" || url.pathname === "/api/messages")) {
