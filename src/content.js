@@ -191,7 +191,11 @@ function skippedPageVideo(video) {
 }
 
 function publicInsightsError(error) {
-  if (/read_insights|permission missing|missing permissions/i.test(String(error || ""))) {
+  const message = String(error || "");
+  if (/session has expired|error validating access token|oauth.*190|code.?190|expired/i.test(message)) {
+    return "Facebook 粉專 Page Token 已過期或失效；請更新 Cloudflare Secret META_CONTENT_PAGE_ACCESS_TOKEN 後重新整理。";
+  }
+  if (/read_insights|permission missing|missing permissions/i.test(message)) {
     return "Meta 尚未提供完整影片洞察權限；目前仍顯示影片清單與可回傳欄位。";
   }
   return error;
@@ -244,28 +248,34 @@ async function fetchPageVideoInsights(version, video, token) {
 
 async function fetchPageVideos(env) {
   const cfg = config(env);
-  if (!cfg.pageId || !cfg.pageToken) {
-    return missing("缺少 META_CONTENT_PAGE_ID 或 META_CONTENT_PAGE_ACCESS_TOKEN");
+  const pageTokens = [...new Set([cfg.pageToken, cfg.userToken].filter(Boolean))];
+  if (!cfg.pageId || pageTokens.length === 0) {
+    return missing("缺少 META_CONTENT_PAGE_ID 與可用的 Facebook Page/User Token");
   }
 
   let usedBasicFields = false;
-  let result = await fetchPages(
-    cfg.graphVersion,
-    `${cfg.pageId}/videos`,
-    cfg.pageToken,
-    { fields: PAGE_VIDEO_FIELDS },
-    MAX_PAGE_VIDEOS,
-  );
-
-  if (!result.ok && result.data.length === 0) {
-    usedBasicFields = true;
+  let usedToken = pageTokens[0];
+  let result = { ok: false, error: "Facebook 粉專影片清單讀取失敗", data: [], pageCount: 0 };
+  for (const token of pageTokens) {
+    usedToken = token;
     result = await fetchPages(
       cfg.graphVersion,
       `${cfg.pageId}/videos`,
-      cfg.pageToken,
-      { fields: PAGE_VIDEO_BASIC_FIELDS },
+      token,
+      { fields: PAGE_VIDEO_FIELDS },
       MAX_PAGE_VIDEOS,
     );
+    if (!result.ok && result.data.length === 0) {
+      usedBasicFields = true;
+      result = await fetchPages(
+        cfg.graphVersion,
+        `${cfg.pageId}/videos`,
+        token,
+        { fields: PAGE_VIDEO_BASIC_FIELDS },
+        MAX_PAGE_VIDEOS,
+      );
+    }
+    if (result.ok || result.data.length > 0) break;
   }
 
   if (!result.ok && result.data.length === 0) {
@@ -283,7 +293,7 @@ async function fetchPageVideos(env) {
     const batch = result.data.slice(index, index + INSIGHTS_BATCH_SIZE);
     const inspectCount = Math.max(0, Math.min(batch.length, MAX_PAGE_INSIGHT_MEDIA - inspectedCount));
     const inspectBatch = batch.slice(0, inspectCount);
-    data.push(...(await Promise.all(inspectBatch.map((video) => fetchPageVideoInsights(cfg.graphVersion, video, cfg.pageToken)))));
+    data.push(...(await Promise.all(inspectBatch.map((video) => fetchPageVideoInsights(cfg.graphVersion, video, usedToken)))));
     data.push(...batch.slice(inspectCount).map(skippedPageVideo));
     inspectedCount += inspectCount;
   }

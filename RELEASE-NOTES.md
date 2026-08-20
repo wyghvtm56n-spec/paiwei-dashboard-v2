@@ -1,5 +1,11 @@
 # Martin Decision Center v2.4.0
 
+## v2.6.0 線上訊息回覆與影片洞察恢復
+
+訊息中心新增管理密碼保護的 `POST /messages/reply`，支援 Facebook Messenger 與 Instagram Direct 的文字回覆。Worker 會在送出前檢查最後入站訊息是否仍在 Meta 24 小時標準回覆視窗內，從 `message_delivery_targets` 解密必要投遞目標，使用既有 D1 unique idempotency hash 防止重複發送，並將成功的 outbound event 寫回訊息中心。LINE 仍保留官方後台入口；超過視窗或缺少安全投遞目標時採 fail-closed，不會猜測或輸出平台 User ID。
+
+首頁第一頁新增突出「進入訊息中心」CTA。Facebook 粉專前 30 筆影片不再只讀取前 4 筆 video insights；系統會逐筆嘗試 `total_video_views` 與 `total_video_views_unique`，若 Page Token 過期或 Meta 權限不足，介面會保留可取得的影片清單欄位並明確提示更新 `META_CONTENT_PAGE_ACCESS_TOKEN` 或補足權限。Instagram 仍保留既有節流策略，以避免同時載入 Ads、Breakdown 與內容資料時超過 Worker subrequest 限制。
+
 ## 訊息中心整合
 
 新增主頁「訊息中心」摘要與獨立 `/messages` 路由。頁面保留 LINE D1 的訊息趨勢、匿名詢問帳號、圖片／按鈕事件與關鍵字需求訊號，並提供 Meta Business Suite 與 LINE 管理後台入口。為避免誤把未同步資料當成已讀／未讀狀態，頁面不渲染姓名、電話或原始聊天內容；Meta／Messenger 對話仍以官方收件匣為準。
