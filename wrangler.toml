@@ -2,6 +2,9 @@ name = "paiwei-line-dashboard"
 main = "src/worker.js"
 compatibility_date = "2026-07-25"
 
+[vars]
+META_CONTENT_PAGE_ID = "107391404964329"
+
 [[d1_databases]]
 binding = "DB"
 database_name = "paiwei-line-health-db"
