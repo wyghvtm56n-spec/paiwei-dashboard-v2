@@ -28,8 +28,25 @@ jobs:
       - name: Verify
         run: npm run verify
 
-      - name: Deploy with Wrangler
-        run: npx wrangler deploy
+      - name: Upload Worker version
+        id: upload
+        shell: bash
+        run: |
+          set -euo pipefail
+          output="$(npx wrangler deploy 2>&1 | tee /tmp/wrangler-deploy.log)"
+          version_id="$(printf '%s\n' "$output" | sed -n 's/.*Current Version ID: //p' | tail -1 | tr -d '\r')"
+          if [[ ! "$version_id" =~ ^[0-9a-fA-F-]{36}$ ]]; then
+            echo "Unable to identify the uploaded Worker Version ID" >&2
+            exit 1
+          fi
+          echo "version_id=$version_id" >> "$GITHUB_OUTPUT"
+
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Promote Worker version to production
+        run: npx wrangler versions deploy "${{ steps.upload.outputs.version_id }}@100%" --yes
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
