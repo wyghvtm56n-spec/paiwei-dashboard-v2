@@ -6,6 +6,8 @@ const MAX_IG_MEDIA = 30;
 const MAX_RETRIES = 2;
 const REQUEST_TIMEOUT_MS = 8_000;
 const INSIGHTS_BATCH_SIZE = 4;
+const MAX_INSIGHT_MEDIA = 4;
+const INSIGHTS_SKIPPED_MESSAGE = "為控制單次請求量，完整洞察延後讀取";
 const PAGE_VIDEO_FIELDS = "id,description,created_time,updated_time,permalink_url,views,likes.summary(true),comments.summary(true),shares";
 const PAGE_VIDEO_BASIC_FIELDS = "id,description,created_time,updated_time,permalink_url";
 const FACEBOOK_GRAPH_HOST = "https://graph.facebook.com";
@@ -171,6 +173,22 @@ function normalizePageListMetrics(video) {
   return Object.fromEntries(Object.entries(metrics).filter(([, value]) => value !== null && value !== undefined));
 }
 
+function skippedPageVideo(video) {
+  return {
+    id: video.id,
+    source: "facebook_page",
+    title: video.description || "Facebook 粉專影片",
+    description: video.description || null,
+    createdTime: video.created_time || null,
+    updatedTime: video.updated_time || null,
+    permalink: video.permalink_url || null,
+    mediaType: "VIDEO",
+    publicMetrics: normalizePageListMetrics(video),
+    insights: {},
+    insightsError: INSIGHTS_SKIPPED_MESSAGE,
+  };
+}
+
 function publicInsightsError(error) {
   if (/read_insights|permission missing|missing permissions/i.test(String(error || ""))) {
     return "Meta 尚未提供完整影片洞察權限；目前仍顯示影片清單與可回傳欄位。";
@@ -259,21 +277,28 @@ async function fetchPageVideos(env) {
   }
 
   const data = [];
+  let inspectedCount = 0;
   for (let index = 0; index < result.data.length; index += INSIGHTS_BATCH_SIZE) {
     const batch = result.data.slice(index, index + INSIGHTS_BATCH_SIZE);
-    data.push(...(await Promise.all(batch.map((video) => fetchPageVideoInsights(cfg.graphVersion, video, cfg.pageToken)))));
+    const inspectCount = Math.max(0, Math.min(batch.length, MAX_INSIGHT_MEDIA - inspectedCount));
+    const inspectBatch = batch.slice(0, inspectCount);
+    data.push(...(await Promise.all(inspectBatch.map((video) => fetchPageVideoInsights(cfg.graphVersion, video, cfg.pageToken)))));
+    data.push(...batch.slice(inspectCount).map(skippedPageVideo));
+    inspectedCount += inspectCount;
   }
 
-  const insightErrors = data.filter((item) => item.insightsError).length;
+  const insightErrors = data.filter((item) => item.insightsError && item.insightsError !== INSIGHTS_SKIPPED_MESSAGE).length;
+  const insightSkipped = data.filter((item) => item.insightsError === INSIGHTS_SKIPPED_MESSAGE).length;
   return {
     ok: true,
     error: insightErrors ? `${insightErrors} 支粉專影片洞察讀取失敗` : null,
     data,
     dataQuality: {
-      complete: !result.truncated && insightErrors === 0,
+      complete: !result.truncated && insightErrors === 0 && insightSkipped === 0,
       listComplete: !result.truncated,
       pageCount: result.pageCount,
       insightErrors,
+      insightSkipped,
       listFields: usedBasicFields ? "basic" : "rich",
       listMetricsAvailable: data.some((item) => Object.keys(item.publicMetrics || {}).length > 0),
     },
@@ -298,6 +323,16 @@ async function resolveInstagramUserId(cfg) {
     };
   }
   return { ok: true, id };
+}
+
+function skippedInstagramMedia(media) {
+  return {
+    ...media,
+    source: "instagram",
+    mediaType: contentType(media),
+    insights: {},
+    insightsError: INSIGHTS_SKIPPED_MESSAGE,
+  };
 }
 
 async function fetchInstagramMediaInsights(version, media, token, host) {
@@ -372,12 +407,18 @@ async function fetchInstagramMedia(env) {
   }
 
   const data = [];
+  let inspectedCount = 0;
   for (let index = 0; index < result.data.length; index += INSIGHTS_BATCH_SIZE) {
     const batch = result.data.slice(index, index + INSIGHTS_BATCH_SIZE);
-    data.push(...(await Promise.all(batch.map((media) => fetchInstagramMediaInsights(cfg.graphVersion, media, token, host)))));
+    const inspectCount = Math.max(0, Math.min(batch.length, MAX_INSIGHT_MEDIA - inspectedCount));
+    const inspectBatch = batch.slice(0, inspectCount);
+    data.push(...(await Promise.all(inspectBatch.map((media) => fetchInstagramMediaInsights(cfg.graphVersion, media, token, host)))));
+    data.push(...batch.slice(inspectCount).map(skippedInstagramMedia));
+    inspectedCount += inspectCount;
   }
 
-  const insightErrors = data.filter((item) => item.insightsError).length;
+  const insightErrors = data.filter((item) => item.insightsError && item.insightsError !== INSIGHTS_SKIPPED_MESSAGE).length;
+  const insightSkipped = data.filter((item) => item.insightsError === INSIGHTS_SKIPPED_MESSAGE).length;
   return {
     ok: true,
     error: insightErrors ? `${insightErrors} 筆 Instagram Media 洞察讀取失敗` : null,
@@ -399,10 +440,11 @@ async function fetchInstagramMedia(env) {
     instagramUserId: user.id,
     apiMode: useInstagramLogin ? "instagram_login" : "facebook_login",
     dataQuality: {
-      complete: !result.truncated && insightErrors === 0,
+      complete: !result.truncated && insightErrors === 0 && insightSkipped === 0,
       listComplete: !result.truncated,
       pageCount: result.pageCount,
       insightErrors,
+      insightSkipped,
       delayedUpToHours: 48,
     },
   };

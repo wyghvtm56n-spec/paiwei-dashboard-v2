@@ -4,6 +4,10 @@
 
 新增主頁「訊息中心」摘要與獨立 `/messages` 路由。頁面保留 LINE D1 的訊息趨勢、匿名詢問帳號、圖片／按鈕事件與關鍵字需求訊號，並提供 Meta Business Suite 與 LINE 管理後台入口。為避免誤把未同步資料當成已讀／未讀狀態，頁面不渲染姓名、電話或原始聊天內容；Meta／Messenger 對話仍以官方收件匣為準。
 
+## v2.4.1 Production subrequest guard
+
+首頁現在最多為每個內容來源讀取四支媒體的完整洞察，其餘影片／Reels 保留清單與可取得欄位並標示洞察延後讀取，避免廣告、Breakdown、LINE 與內容 API 同時載入時超過 Cloudflare Worker 單次 subrequest 限制。這是可靠性保護，不會刪除或修改任何 Meta／Instagram 內容。
+
 ## Instagram Login API update
 
 Instagram content integration now supports the official Instagram API with Instagram Login. It uses `META_IG_LOGIN_ACCESS_TOKEN`, `META_CONTENT_IG_USER_ID`, `graph.instagram.com`, and the `instagram_business_basic`／`instagram_business_manage_insights` permissions. The previous Facebook Login path remains available as a fallback. Reels metrics include views, reach, likes, comments, shares, saved, total interactions, average watch time, total watch time, and skip rate when Meta returns them; Insights can be delayed by up to 48 hours.
