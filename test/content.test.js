@@ -92,7 +92,7 @@ test("可正規化粉專影片與 Instagram Reels Insights", async () => {
     const result = await fetchContentDashboard({
       META_CONTENT_PAGE_ID: "page-123",
       META_CONTENT_PAGE_ACCESS_TOKEN: "page-token",
-      META_CONTENT_USER_ACCESS_TOKEN: "user-token",
+      INSTAGRAM_ACCESS_TOKEN: "user-token",
     });
 
     assert.equal(result.ok, true);

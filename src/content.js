@@ -14,7 +14,7 @@ function config(env) {
     graphVersion: env.META_CONTENT_GRAPH_VERSION || GRAPH_VERSION,
     pageId: env.META_CONTENT_PAGE_ID || null,
     pageToken: env.META_CONTENT_PAGE_ACCESS_TOKEN || null,
-    userToken: env.META_CONTENT_USER_ACCESS_TOKEN || null,
+    userToken: env.META_CONTENT_USER_ACCESS_TOKEN || env.INSTAGRAM_ACCESS_TOKEN || null,
     igUserId: env.META_CONTENT_IG_USER_ID || null,
   };
 }
@@ -317,7 +317,7 @@ async function fetchInstagramMediaInsights(version, media, token) {
 async function fetchInstagramMedia(env) {
   const cfg = config(env);
   if (!cfg.userToken) {
-    return missing("缺少 META_CONTENT_USER_ACCESS_TOKEN");
+    return missing("缺少 META_CONTENT_USER_ACCESS_TOKEN 或 INSTAGRAM_ACCESS_TOKEN");
   }
 
   const user = await resolveInstagramUserId(cfg);
@@ -391,6 +391,7 @@ export async function fetchContentDashboard(env) {
     env.META_CONTENT_PAGE_ID ||
       env.META_CONTENT_PAGE_ACCESS_TOKEN ||
       env.META_CONTENT_USER_ACCESS_TOKEN ||
+      env.INSTAGRAM_ACCESS_TOKEN ||
       env.META_CONTENT_IG_USER_ID,
   );
 

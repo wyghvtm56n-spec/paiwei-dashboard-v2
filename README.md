@@ -103,6 +103,6 @@ npm run deploy
 
 ## 粉專與 Instagram 影片串接
 
-影片內容區已加入儀表板，但要顯示真實資料，請設定 `META_CONTENT_PAGE_ID`、`META_CONTENT_PAGE_ACCESS_TOKEN` 與 `META_CONTENT_USER_ACCESS_TOKEN`。`META_CONTENT_IG_USER_ID` 可選；若留空，系統會使用 Page ID 與 Facebook User access token 查詢 `instagram_business_account`。內容 Token 與現有 `META_ACCESS_TOKEN` 分離，避免自然內容權限與廣告權限混用。
+影片內容區已加入儀表板，但要顯示真實資料，請設定 `META_CONTENT_PAGE_ID`、`META_CONTENT_PAGE_ACCESS_TOKEN` 與 `META_CONTENT_USER_ACCESS_TOKEN`。若 production Worker 已有舊的 `INSTAGRAM_ACCESS_TOKEN`，系統也會將它作為 Instagram User Token 的相容回退。`META_CONTENT_IG_USER_ID` 可選；若留空，系統會使用 Page ID 與 Facebook User access token 查詢 `instagram_business_account`。內容 Token 與現有 `META_ACCESS_TOKEN` 分離，避免自然內容權限與廣告權限混用。
 
 粉專影片首版使用 `/<PAGE_ID>/videos` 與 `/<VIDEO_ID>/video_insights`；若 Meta 拒絕影片 Insights，系統會保留影片清單，並嘗試顯示 API 可回傳的影片欄位，卡片會標示「可見觀看次數」或「完整洞察尚未提供」，不把缺少的流量補成 0。Instagram 首版使用 `/<IG_USER_ID>/media` 與 `/<INSTAGRAM_MEDIA_ID>/insights`，先排除 Story。Instagram Insights 可能延遲最多 48 小時，缺少資料時顯示 N/A。內容洞察會獨立於廣告區塊，不直接當成成交或營收結果。
