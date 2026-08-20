@@ -4,6 +4,7 @@ compatibility_date = "2026-07-25"
 
 [vars]
 META_CONTENT_PAGE_ID = "107391404964329"
+META_CONTENT_IG_USER_ID = "17841448491675947"
 
 [[d1_databases]]
 binding = "DB"
