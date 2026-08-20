@@ -54,7 +54,7 @@ export default {
     const url = new URL(request.url);
 
     if (request.method === "GET" && url.pathname === "/health") {
-      return jsonResponse({ ok: true, service: "martin-decision-center", version: "2.1.0" });
+      return jsonResponse({ ok: true, service: "martin-decision-center", version: "2.2.0" });
     }
 
     if (request.method === "GET" && url.pathname === "/login") {

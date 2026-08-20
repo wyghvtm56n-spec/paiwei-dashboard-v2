@@ -6,6 +6,8 @@ const MAX_IG_MEDIA = 30;
 const MAX_RETRIES = 2;
 const REQUEST_TIMEOUT_MS = 8_000;
 const INSIGHTS_BATCH_SIZE = 4;
+const PAGE_VIDEO_FIELDS = "id,description,created_time,updated_time,permalink_url,views,likes.summary(true),comments.summary(true),shares";
+const PAGE_VIDEO_BASIC_FIELDS = "id,description,created_time,updated_time,permalink_url";
 
 function config(env) {
   return {
@@ -144,6 +146,29 @@ function contentType(media) {
   return String(media.media_product_type || media.media_type || "FEED").toUpperCase();
 }
 
+function summaryCount(value) {
+  if (value?.summary?.total_count !== undefined) return value.summary.total_count;
+  if (value?.count !== undefined) return value.count;
+  return null;
+}
+
+function normalizePageListMetrics(video) {
+  const metrics = {
+    views: video.views ?? video.total_video_views ?? null,
+    likes: summaryCount(video.likes),
+    comments: summaryCount(video.comments),
+    shares: summaryCount(video.shares),
+  };
+  return Object.fromEntries(Object.entries(metrics).filter(([, value]) => value !== null && value !== undefined));
+}
+
+function publicInsightsError(error) {
+  if (/read_insights|permission missing|missing permissions/i.test(String(error || ""))) {
+    return "Meta 尚未提供完整影片洞察權限；目前仍顯示影片清單與可回傳欄位。";
+  }
+  return error;
+}
+
 async function fetchPageVideoInsights(version, video, token) {
   const url = graphUrl(version, `${video.id}/video_insights`, {
     metric: "total_video_views,total_video_views_unique",
@@ -151,10 +176,17 @@ async function fetchPageVideoInsights(version, video, token) {
   const result = await graphRequest(url.toString(), token);
   if (!result.ok) {
     return {
-      ...video,
+      id: video.id,
       source: "facebook_page",
+      title: video.description || "Facebook 粉專影片",
+      description: video.description || null,
+      createdTime: video.created_time || null,
+      updatedTime: video.updated_time || null,
+      permalink: video.permalink_url || null,
+      mediaType: "VIDEO",
+      publicMetrics: normalizePageListMetrics(video),
       insights: {},
-      insightsError: result.error,
+      insightsError: publicInsightsError(result.error),
     };
   }
 
@@ -167,6 +199,7 @@ async function fetchPageVideoInsights(version, video, token) {
     updatedTime: video.updated_time || null,
     permalink: video.permalink_url || null,
     mediaType: "VIDEO",
+    publicMetrics: normalizePageListMetrics(video),
     insights: normalizeInsights(result.payload),
     insightsError: null,
   };
@@ -178,13 +211,25 @@ async function fetchPageVideos(env) {
     return missing("缺少 META_CONTENT_PAGE_ID 或 META_CONTENT_PAGE_ACCESS_TOKEN");
   }
 
-  const result = await fetchPages(
+  let usedBasicFields = false;
+  let result = await fetchPages(
     cfg.graphVersion,
     `${cfg.pageId}/videos`,
     cfg.pageToken,
-    { fields: "id,description,created_time,updated_time,permalink_url" },
+    { fields: PAGE_VIDEO_FIELDS },
     MAX_PAGE_VIDEOS,
   );
+
+  if (!result.ok && result.data.length === 0) {
+    usedBasicFields = true;
+    result = await fetchPages(
+      cfg.graphVersion,
+      `${cfg.pageId}/videos`,
+      cfg.pageToken,
+      { fields: PAGE_VIDEO_BASIC_FIELDS },
+      MAX_PAGE_VIDEOS,
+    );
+  }
 
   if (!result.ok && result.data.length === 0) {
     return {
@@ -211,6 +256,8 @@ async function fetchPageVideos(env) {
       listComplete: !result.truncated,
       pageCount: result.pageCount,
       insightErrors,
+      listFields: usedBasicFields ? "basic" : "rich",
+      listMetricsAvailable: data.some((item) => Object.keys(item.publicMetrics || {}).length > 0),
     },
   };
 }

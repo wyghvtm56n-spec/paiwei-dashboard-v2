@@ -18,13 +18,13 @@ Meta API 已升級為 v26.0，並加入八秒逾時、針對 429／5xx 的有限
 
 新增獨立的內容資料層與 `/content/videos` 路由。Facebook 粉專使用 Page access token 讀取 `/PAGE_ID/videos` 與 `/VIDEO_ID/video_insights`；Instagram 使用 Facebook User access token 讀取連結的 Professional Account Media 與 `/INSTAGRAM_MEDIA_ID/insights`。內容 Token 與現有 Ads Token 分離，避免自然內容互動與廣告投放指標混用。
 
-儀表板新增粉專影片與 Instagram Feed／Reels 卡片，顯示 views、reach、likes、comments、shares、saved、total_interactions；Reels 另顯示平均觀看時間、總觀看時間與前三秒跳過率。若 API 沒有資料，顯示 N/A 而不是補成 0；Instagram 洞察可能延遲最多 48 小時，首版排除 Story。
+儀表板新增粉專影片與 Instagram Feed／Reels 卡片，顯示 views、reach、likes、comments、shares、saved、total_interactions；Reels 另顯示平均觀看時間、總觀看時間與前三秒跳過率。若 Meta 拒絕完整影片 Insights，系統仍保留粉專影片清單，並嘗試讀取 API 可回傳的影片欄位；卡片會標示「可見觀看次數」或「完整洞察尚未提供」，不把缺少資料補成 0。Instagram 洞察可能延遲最多 48 小時，首版排除 Story。
 
 ## 安全與測試
 
 新增可選的 `DASHBOARD_PASSWORD` 與 `COOKIE_SIGNING_KEY` Cloudflare Secrets。設定後，首頁與商業資料 JSON 路由會要求密碼登入，登入 Cookie 使用 HttpOnly、Secure 與 SameSite=Lax。Worker 同時加入 Content Security Policy、禁止 iframe、no-referrer 與權限限制標頭。
 
-新增十項自動化測試，涵蓋完整日趨勢、樣本門檻、不輸出加碼／停投指令、向下相容、登入 Cookie、錯誤密碼、安全標頭，以及粉專／Instagram 影片資料正規化。
+新增十一項自動化測試，涵蓋完整日趨勢、樣本門檻、不輸出加碼／停投指令、向下相容、登入 Cookie、錯誤密碼、安全標頭、粉專／Instagram 影片資料正規化，以及 Insights 權限不足時的粉專影片欄位回退。
 
 ---
 

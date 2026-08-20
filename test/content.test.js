@@ -104,3 +104,50 @@ test("可正規化粉專影片與 Instagram Reels Insights", async () => {
     globalThis.fetch = originalFetch;
   }
 });
+
+test("Insights 權限不足時保留粉專影片清單與可見欄位", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (input) => {
+    const url = new URL(typeof input === "string" ? input : input.url);
+    const path = url.pathname;
+
+    if (path.endsWith("/page-456/videos")) {
+      return Response.json({
+        data: [
+          {
+            id: "video-2",
+            description: "沒有完整洞察的粉專影片",
+            views: 321,
+            likes: { summary: { total_count: 12 } },
+            comments: { summary: { total_count: 3 } },
+            shares: { count: 4 },
+          },
+        ],
+      });
+    }
+
+    if (path.endsWith("/video-2/video_insights")) {
+      return Response.json(
+        { error: { message: "read_insights permission missing" } },
+        { status: 403 },
+      );
+    }
+
+    return Response.json({ error: { message: `unexpected ${path}` } }, { status: 404 });
+  };
+
+  try {
+    const result = await fetchContentDashboard({
+      META_CONTENT_PAGE_ID: "page-456",
+      META_CONTENT_PAGE_ACCESS_TOKEN: "page-token",
+    });
+
+    assert.equal(result.page.ok, true);
+    assert.equal(result.page.dataQuality.listMetricsAvailable, true);
+    assert.equal(result.page.data[0].publicMetrics.views, 321);
+    assert.equal(result.page.data[0].publicMetrics.likes, 12);
+    assert.match(result.page.data[0].insightsError, /尚未提供完整影片洞察權限/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});

@@ -38,7 +38,17 @@ function formatDate(value) {
 }
 
 function metric(item, name) {
-  return item?.insights?.[name]?.value ?? null;
+  const publicName = {
+    total_video_views: "views",
+    total_video_views_unique: "unique_views",
+    total_video_likes: "likes",
+    total_video_comments: "comments",
+  }[name] || name;
+  return item?.insights?.[name]?.value ?? item?.publicMetrics?.[publicName] ?? null;
+}
+
+function hasFullInsights(item) {
+  return Object.keys(item?.insights || {}).length > 0;
 }
 
 function sourceLabel(source) {
@@ -64,6 +74,8 @@ function renderItem(item) {
     ? metric(item, "total_video_views")
     : metric(item, "views") ?? metric(item, "total_views");
   const reach = metric(item, "reach") ?? (isPage ? metric(item, "total_video_views_unique") : null);
+  const fullInsights = hasFullInsights(item);
+  const viewsLabel = isPage && !fullInsights ? "可見觀看次數" : isPage ? "3 秒／完成觀看" : "Views";
 
   return `
     <article class="content-card">
@@ -76,7 +88,7 @@ function renderItem(item) {
         ${item.permalink ? `<a class="content-link" href="${escapeHtml(item.permalink)}" target="_blank" rel="noreferrer">開啟原文</a>` : ""}
       </div>
       <div class="content-metrics">
-        ${insightCell(isPage ? "3 秒／完成觀看" : "Views", primaryViews)}
+        ${insightCell(viewsLabel, primaryViews)}
         ${insightCell(isPage ? "Unique views" : "Reach", reach)}
         ${insightCell("Likes", metric(item, isPage ? "total_video_likes" : "likes"))}
         ${insightCell("Comments", metric(item, isPage ? "total_video_comments" : "comments"))}
@@ -111,10 +123,14 @@ function renderSourcePanel(title, result, emptyMessage) {
       </section>
     `;
   }
+  const listMetricsAvailable = Boolean(result?.dataQuality?.listMetricsAvailable);
+  const subtitle = listMetricsAvailable
+    ? "已顯示 Meta 可回傳的影片欄位；完整洞察可能延遲最多 48 小時。"
+    : "目前可顯示影片清單；完整觀看與互動洞察需要額外 Meta Insights 權限。";
   return `
     <section class="panel content-source-panel">
       <div class="content-panel-heading"><h3>${escapeHtml(title)}</h3>${status(`${items.length} 筆`, "info")}</div>
-      <p class="panel-subtitle">只顯示最近可取得的內容；洞察可能延遲最多 48 小時。</p>
+      <p class="panel-subtitle">${escapeHtml(subtitle)}</p>
       <div class="content-list">${items.map(renderItem).join("")}</div>
     </section>
   `;
