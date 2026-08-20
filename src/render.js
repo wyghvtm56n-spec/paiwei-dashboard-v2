@@ -850,7 +850,7 @@ export function renderDashboard(data) {
         <div class="brand-mark">MD</div>
         <div><strong>Martin Decision Center</strong><span>派威營運決策中心</span></div>
       </div>
-      <div class="updated">更新時間：${escapeHtml(updatedAt)}<br>版本 2.2.0</div>
+      <div class="updated">更新時間：${escapeHtml(updatedAt)}<br>版本 2.3.0</div>
     </header>
 
     <nav class="section-nav" aria-label="儀表板區段">
