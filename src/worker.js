@@ -3,10 +3,16 @@ import {
   handleLogin,
   handleLogout,
   renderLoginPage,
+  getMessageAuthState,
+  handleMessageLogin,
+  handleMessageLogout,
+  renderMessageLoginPage,
+  renderMessageConfigurationPage,
 } from "./auth.js";
 import { fetchDashboardData } from "./dashboard-data.js";
 import { renderDashboard } from "./render.js";
 import { renderMessagesPage } from "./message-center.js";
+import { fetchMessageCenterData } from "./message-data.js";
 
 const securityHeaders = {
   "content-security-policy":
@@ -55,7 +61,7 @@ export default {
     const url = new URL(request.url);
 
     if (request.method === "GET" && url.pathname === "/health") {
-      return jsonResponse({ ok: true, service: "martin-decision-center", version: "2.4.1" });
+      return jsonResponse({ ok: true, service: "martin-decision-center", version: "2.5.0" });
     }
 
     if (request.method === "GET" && url.pathname === "/login") {
@@ -78,6 +84,40 @@ export default {
       return handleLogout();
     }
 
+    if (request.method === "POST" && url.pathname === "/messages/login") {
+      const response = await handleMessageLogin(request, env);
+      const headers = new Headers(response.headers);
+      for (const [key, value] of Object.entries(securityHeaders)) headers.set(key, value);
+      headers.set("cache-control", "no-store");
+      return new Response(response.body, { status: response.status, headers });
+    }
+
+    if (request.method === "GET" && url.pathname === "/messages/logout") {
+      const response = handleMessageLogout();
+      const headers = new Headers(response.headers);
+      for (const [key, value] of Object.entries(securityHeaders)) headers.set(key, value);
+      headers.set("cache-control", "no-store");
+      return new Response(response.body, { status: response.status, headers });
+    }
+
+    if (request.method === "GET" && (url.pathname === "/messages" || url.pathname === "/api/messages")) {
+      const messageAuth = await getMessageAuthState(request, env);
+      if (!messageAuth.configured) {
+        return htmlResponse(renderMessageConfigurationPage(), 503);
+      }
+      if (!messageAuth.authorized) {
+        return htmlResponse(renderMessageLoginPage(), 401);
+      }
+      const messageData = await fetchMessageCenterData(env, {
+        conversationLimit: url.searchParams.get("limit"),
+        eventLimit: url.searchParams.get("event_limit"),
+      });
+      if (url.pathname === "/api/messages") {
+        return jsonResponse(messageData, messageData.ok ? 200 : 503);
+      }
+      return htmlResponse(renderMessagesPage(messageData), messageData.ok ? 200 : 503);
+    }
+
     const auth = await getAuthState(request, env);
     if (!auth.authorized) return redirect("/login");
 
@@ -96,10 +136,6 @@ export default {
 
       if (url.pathname === "/api/dashboard") {
         return jsonResponse({ ok: true, data }, 200, cacheHeader);
-      }
-
-      if (url.pathname === "/messages") {
-        return htmlResponse(renderMessagesPage(data), 200, cacheHeader);
       }
 
       if (url.pathname === "/meta/ads") {

@@ -69,3 +69,10 @@ Meta API 已升級為 v26.0，並加入八秒逾時、針對 429／5xx 的有限
 - 本版本仍為唯讀，不會修改 Meta 廣告設定。
 - 區域建議目前只依花費、點擊、CTR、CPC 判斷，尚未連結 LINE 詢問與成交資料。
 - 若某一種 Breakdown 不被目前廣告資料或 Meta API 支援，Dashboard 會顯示該區塊錯誤，不會讓整頁故障。
+
+
+## v2.5.0 原始訊息中心復原
+
+以 Cloudflare Worker version 139 的實際預覽與既有 D1 schema 為復原基準，恢復 Facebook Messenger、Instagram Direct 與 LINE 的原始對話、聯絡人資料、客服工作區欄位、對話狀態與訊息事件。新增 `src/message-data.js` 以單一 D1 批次讀取 `message_conversations`、`message_events`、`message_contact_profiles` 與相關客服表，新增 `/api/messages` JSON 路由，並讓 `/messages` 沿用既有 `MESSAGE_ADMIN_PASSWORD` 與 `MESSAGE_SESSION_SECRET` 管理登入。
+
+訊息頁目前採唯讀方式呈現原始聊天與個資；回覆、標記已讀、刪除或其他平台操作仍導向 Meta Business Suite／LINE 官方後台，避免在資料復原階段誤改外部帳號狀態。首頁只顯示入口與統計，不輸出原始聊天內容。
