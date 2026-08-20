@@ -40,12 +40,16 @@ function sleep(ms) {
 async function graphRequest(url, token) {
   let lastError = null;
 
+  const requestUrl = new URL(url);
+  const isInstagramLoginHost = requestUrl.hostname === "graph.instagram.com";
+  if (isInstagramLoginHost) requestUrl.searchParams.set("access_token", token);
+
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt += 1) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
     try {
-      const response = await fetch(url, {
+      const response = await fetch(requestUrl.toString(), {
         headers: { authorization: `Bearer ${token}` },
         signal: controller.signal,
       });
