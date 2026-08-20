@@ -92,7 +92,7 @@ test("可正規化粉專影片與 Instagram Reels Insights", async () => {
     const result = await fetchContentDashboard({
       META_CONTENT_PAGE_ID: "page-123",
       META_CONTENT_PAGE_ACCESS_TOKEN: "page-token",
-      META_CONTENT_USER_ACCESS_TOKEN: "user-token",
+      INSTAGRAM_ACCESS_TOKEN: "user-token",
     });
 
     assert.equal(result.ok, true);
@@ -147,6 +147,72 @@ test("Insights 權限不足時保留粉專影片清單與可見欄位", async ()
     assert.equal(result.page.data[0].publicMetrics.views, 321);
     assert.equal(result.page.data[0].publicMetrics.likes, 12);
     assert.match(result.page.data[0].insightsError, /尚未提供完整影片洞察權限/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("Instagram Login 使用新版 host 與 User Token 讀取 Reels", async () => {
+  const originalFetch = globalThis.fetch;
+  const hosts = [];
+  globalThis.fetch = async (input) => {
+    const url = new URL(typeof input === "string" ? input : input.url);
+    hosts.push(url.hostname);
+    const path = url.pathname;
+
+    if (path.endsWith("/17841448491675947/media")) {
+      return Response.json({
+        data: [
+          {
+            id: "ig-login-media-1",
+            caption: "Instagram Login 測試 Reels",
+            media_type: "VIDEO",
+            media_product_type: "REELS",
+            permalink: "https://instagram.com/reel/ig-login-media-1",
+            timestamp: "2026-08-19T00:00:00+0000",
+            view_count: 812,
+            like_count: 45,
+            comments_count: 7,
+          },
+        ],
+      });
+    }
+
+    if (path.endsWith("/ig-login-media-1/insights")) {
+      if (url.searchParams.get("metric")?.includes("ig_reels_avg_watch_time")) {
+        return Response.json({
+          data: [
+            { name: "ig_reels_avg_watch_time", values: [{ value: 9.8 }] },
+            { name: "reels_skip_rate", values: [{ value: 0.18 }] },
+          ],
+        });
+      }
+      return Response.json({
+        data: [
+          { name: "views", values: [{ value: 812 }] },
+          { name: "reach", values: [{ value: 601 }] },
+          { name: "likes", values: [{ value: 45 }] },
+          { name: "comments", values: [{ value: 7 }] },
+          { name: "shares", values: [{ value: 11 }] },
+        ],
+      });
+    }
+
+    return Response.json({ error: { message: `unexpected ${url.hostname}${path}` } }, { status: 404 });
+  };
+
+  try {
+    const result = await fetchContentDashboard({
+      META_IG_LOGIN_ACCESS_TOKEN: "instagram-login-token",
+      META_CONTENT_IG_USER_ID: "17841448491675947",
+    });
+
+    assert.equal(result.instagram.ok, true);
+    assert.equal(result.instagram.apiMode, "instagram_login");
+    assert.equal(result.instagram.data[0].publicMetrics.views, 812);
+    assert.equal(result.instagram.data[0].insights.reach.value, 601);
+    assert.equal(result.instagram.data[0].insights.ig_reels_avg_watch_time.value, 9.8);
+    assert.ok(hosts.every((host) => host === "graph.instagram.com"));
   } finally {
     globalThis.fetch = originalFetch;
   }

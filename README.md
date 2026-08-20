@@ -1,6 +1,6 @@
 # Martin Decision Center
 
-Cloudflare Workers 營運決策儀表板，整合 LINE D1 統計、Meta Ads Insights 與粉專／Instagram 內容洞察。v2.1.0 延續 v2.0.0 的決策可信度改善，並加入**單一、可測試的規則式決策摘要**，並針對桌面與手機重新設計資訊架構。
+Cloudflare Workers 營運決策儀表板，整合 LINE D1 統計、Meta Ads Insights、粉專／Instagram 內容洞察與訊息中心。v2.4.0 保留既有決策、LINE 與內容串接，新增獨立 `/messages` 訊息中心與主頁入口，不展示未實際同步的原始聊天內容。
 
 ## v2.0.0 重點
 
@@ -15,6 +15,7 @@ Cloudflare Workers 營運決策儀表板，整合 LINE D1 統計、Meta Ads Insi
 | 穩定性 | Meta API 加入逾時、有限重試、五分鐘快取與局部降級 |
 | 安全性 | 可選密碼登入、HttpOnly Cookie、安全標頭與受保護 JSON 路由 |
 | 內容洞察 | 粉專影片與 Instagram Feed／Reels；逐媒體 Insights、延遲與局部失敗提示 |
+| 訊息中心 | LINE 事件趨勢、匿名詢問帳號、需求訊號與 Meta／LINE 官方後台入口；不渲染原始聊天內容 |
 | 測試 | 使用 Node 內建測試覆蓋完整日趨勢、樣本門檻、登入 Cookie、安全標頭與內容正規化 |
 
 ## 資料來源與限制
@@ -32,7 +33,8 @@ Cloudflare Workers 營運決策儀表板，整合 LINE D1 統計、Meta Ads Insi
 
 | 路由 | 用途 |
 |---|---|
-| `/` | Martin Decision Center |
+| `/` | Martin Decision Center，含訊息中心摘要 |
+| `/messages` | 獨立訊息中心；LINE 統計與 Meta／LINE 官方收件匣入口 |
 | `/login` | 可選的儀表板密碼登入 |
 | `/logout` | 清除登入 Cookie |
 | `/health` | 公開健康檢查，不包含商業資料 |
@@ -94,6 +96,7 @@ npm run deploy
 | `src/meta.js` | Meta Ads API、指標正規化、逾時、重試與分頁完整性 |
 | `src/content.js` | 粉專影片、Instagram Media／Reels 清單與逐媒體 Insights |
 | `src/content-render.js` | 粉專／Instagram 內容卡片與資料延遲提示 |
+| `src/message-center.js` | 訊息中心、LINE 統計、官方收件匣入口與資料邊界 |
 | `src/decision.js` | 單一規則式決策摘要與樣本門檻 |
 | `src/dashboard-data.js` | 平行載入、局部降級與五分鐘快取 |
 | `src/auth.js` | 可選密碼登入與簽章 Cookie |
@@ -103,6 +106,6 @@ npm run deploy
 
 ## 粉專與 Instagram 影片串接
 
-影片內容區已加入儀表板，但要顯示真實資料，請設定 `META_CONTENT_PAGE_ID`、`META_CONTENT_PAGE_ACCESS_TOKEN` 與 `META_CONTENT_USER_ACCESS_TOKEN`。`META_CONTENT_IG_USER_ID` 可選；若留空，系統會使用 Page ID 與 Facebook User access token 查詢 `instagram_business_account`。內容 Token 與現有 `META_ACCESS_TOKEN` 分離，避免自然內容權限與廣告權限混用。
+影片內容區已加入儀表板。Facebook 粉專影片需要 `META_CONTENT_PAGE_ID` 與 `META_CONTENT_PAGE_ACCESS_TOKEN`；Instagram Login 需要 `META_CONTENT_IG_USER_ID` 與 `META_IG_LOGIN_ACCESS_TOKEN`。訊息中心路由為 `/messages`，LINE 統計來自 D1；Meta／Messenger 原始對話仍由官方收件匣處理。新版 Instagram Login 會優先使用 `graph.instagram.com` 與 `instagram_business_basic`／`instagram_business_manage_insights`。若未設定 Instagram Login Secret，系統才回退到 `META_CONTENT_USER_ACCESS_TOKEN` 或既有的 `INSTAGRAM_ACCESS_TOKEN` Facebook Login 路徑。內容 Token 與現有 `META_ACCESS_TOKEN` 分離，避免自然內容權限與廣告權限混用。
 
-粉專影片首版使用 `/<PAGE_ID>/videos` 與 `/<VIDEO_ID>/video_insights`；若 Meta 拒絕影片 Insights，系統會保留影片清單，並嘗試顯示 API 可回傳的影片欄位，卡片會標示「可見觀看次數」或「完整洞察尚未提供」，不把缺少的流量補成 0。Instagram 首版使用 `/<IG_USER_ID>/media` 與 `/<INSTAGRAM_MEDIA_ID>/insights`，先排除 Story。Instagram Insights 可能延遲最多 48 小時，缺少資料時顯示 N/A。內容洞察會獨立於廣告區塊，不直接當成成交或營收結果。
+粉專影片首版使用 `/<PAGE_ID>/videos` 與 `/<VIDEO_ID>/video_insights`；若 Meta 拒絕影片 Insights，系統會保留影片清單，並嘗試顯示 API 可回傳的影片欄位，卡片會標示「可見觀看次數」或「完整洞察尚未提供」，不把缺少的流量補成 0。Instagram Login 使用 `/<IG_USER_ID>/media` 與 `/<INSTAGRAM_MEDIA_ID>/insights`，可讀取 Views、Reach、Likes、Comments、Shares、Saved、Total interactions，以及 Reels 平均觀看時間、總觀看時間與前三秒跳過率。Instagram Insights 可能延遲最多 48 小時，缺少資料時顯示 N/A。內容洞察會獨立於廣告區塊，不直接當成成交或營收結果。

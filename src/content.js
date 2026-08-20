@@ -8,13 +8,18 @@ const REQUEST_TIMEOUT_MS = 8_000;
 const INSIGHTS_BATCH_SIZE = 4;
 const PAGE_VIDEO_FIELDS = "id,description,created_time,updated_time,permalink_url,views,likes.summary(true),comments.summary(true),shares";
 const PAGE_VIDEO_BASIC_FIELDS = "id,description,created_time,updated_time,permalink_url";
+const FACEBOOK_GRAPH_HOST = "https://graph.facebook.com";
+const INSTAGRAM_GRAPH_HOST = "https://graph.instagram.com";
+const INSTAGRAM_LOGIN_MEDIA_FIELDS = "id,caption,media_type,media_url,permalink,thumbnail_url,timestamp,username,view_count,like_count,comments_count";
+const FACEBOOK_LOGIN_MEDIA_FIELDS = "id,caption,media_type,media_product_type,media_url,permalink,thumbnail_url,timestamp";
 
 function config(env) {
   return {
     graphVersion: env.META_CONTENT_GRAPH_VERSION || GRAPH_VERSION,
     pageId: env.META_CONTENT_PAGE_ID || null,
     pageToken: env.META_CONTENT_PAGE_ACCESS_TOKEN || null,
-    userToken: env.META_CONTENT_USER_ACCESS_TOKEN || null,
+    userToken: env.META_CONTENT_USER_ACCESS_TOKEN || env.INSTAGRAM_ACCESS_TOKEN || null,
+    instagramLoginToken: env.META_IG_LOGIN_ACCESS_TOKEN || null,
     igUserId: env.META_CONTENT_IG_USER_ID || null,
   };
 }
@@ -35,12 +40,16 @@ function sleep(ms) {
 async function graphRequest(url, token) {
   let lastError = null;
 
+  const requestUrl = new URL(url);
+  const isInstagramLoginHost = requestUrl.hostname === "graph.instagram.com";
+  if (isInstagramLoginHost) requestUrl.searchParams.set("access_token", token);
+
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt += 1) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
     try {
-      const response = await fetch(url, {
+      const response = await fetch(requestUrl.toString(), {
         headers: { authorization: `Bearer ${token}` },
         signal: controller.signal,
       });
@@ -75,8 +84,8 @@ async function graphRequest(url, token) {
   return { ok: false, error: lastError || "Meta content API failed", status: 0 };
 }
 
-function graphUrl(version, path, params = {}) {
-  const url = new URL(`https://graph.facebook.com/${version}/${path}`);
+function graphUrl(version, path, params = {}, host = FACEBOOK_GRAPH_HOST) {
+  const url = new URL(`${host}/${version}/${path}`);
   for (const [key, value] of Object.entries(params)) {
     if (value !== undefined && value !== null && value !== "") {
       url.searchParams.set(key, String(value));
@@ -85,12 +94,12 @@ function graphUrl(version, path, params = {}) {
   return url;
 }
 
-async function fetchPages(version, path, token, params = {}, maxItems = 50) {
+async function fetchPages(version, path, token, params = {}, maxItems = 50, host = FACEBOOK_GRAPH_HOST) {
   const rows = [];
   let nextUrl = graphUrl(version, path, {
     ...params,
     limit: PAGE_LIMIT,
-  }).toString();
+  }, host).toString();
   let pageCount = 0;
 
   while (nextUrl && pageCount < MAX_PAGES && rows.length < maxItems) {
@@ -167,6 +176,15 @@ function publicInsightsError(error) {
     return "Meta 尚未提供完整影片洞察權限；目前仍顯示影片清單與可回傳欄位。";
   }
   return error;
+}
+
+function normalizeInstagramListMetrics(media) {
+  const metrics = {
+    views: media.view_count ?? null,
+    likes: media.like_count ?? null,
+    comments: media.comments_count ?? null,
+  };
+  return Object.fromEntries(Object.entries(metrics).filter(([, value]) => value !== null && value !== undefined));
 }
 
 async function fetchPageVideoInsights(version, video, token) {
@@ -282,21 +300,23 @@ async function resolveInstagramUserId(cfg) {
   return { ok: true, id };
 }
 
-async function fetchInstagramMediaInsights(version, media, token) {
+async function fetchInstagramMediaInsights(version, media, token, host) {
   const baseMetrics = "views,reach,likes,comments,saved,shares,total_interactions";
   const baseUrl = graphUrl(version, `${media.id}/insights`, {
     metric: baseMetrics,
-  });
+  }, host);
   const baseResult = await graphRequest(baseUrl.toString(), token);
   let insights = baseResult.ok ? normalizeInsights(baseResult.payload) : {};
   let insightsError = baseResult.ok ? null : baseResult.error;
 
   const isReel = contentType(media) === "REELS";
   if (isReel) {
+    const reelMetrics = host === INSTAGRAM_GRAPH_HOST
+      ? "ig_reels_avg_watch_time,ig_reels_video_view_total_time,reels_skip_rate"
+      : "ig_reels_avg_watch_time,ig_reels_video_view_total_time,reels_skip_rate,crossposted_views,facebook_views,total_views";
     const reelUrl = graphUrl(version, `${media.id}/insights`, {
-      metric:
-        "ig_reels_avg_watch_time,ig_reels_video_view_total_time,reels_skip_rate,crossposted_views,facebook_views,total_views",
-    });
+      metric: reelMetrics,
+    }, host);
     const reelResult = await graphRequest(reelUrl.toString(), token);
     if (reelResult.ok) {
       insights = { ...insights, ...normalizeInsights(reelResult.payload) };
@@ -316,11 +336,18 @@ async function fetchInstagramMediaInsights(version, media, token) {
 
 async function fetchInstagramMedia(env) {
   const cfg = config(env);
-  if (!cfg.userToken) {
-    return missing("缺少 META_CONTENT_USER_ACCESS_TOKEN");
+  const useInstagramLogin = Boolean(cfg.instagramLoginToken);
+  const token = cfg.instagramLoginToken || cfg.userToken;
+  const host = useInstagramLogin ? INSTAGRAM_GRAPH_HOST : FACEBOOK_GRAPH_HOST;
+  if (!token) {
+    return missing("缺少 META_IG_LOGIN_ACCESS_TOKEN、META_CONTENT_USER_ACCESS_TOKEN 或 INSTAGRAM_ACCESS_TOKEN");
   }
 
-  const user = await resolveInstagramUserId(cfg);
+  const user = useInstagramLogin
+    ? cfg.igUserId
+      ? { ok: true, id: cfg.igUserId }
+      : { ok: false, error: "Instagram Login 需要 META_CONTENT_IG_USER_ID" }
+    : await resolveInstagramUserId(cfg);
   if (!user.ok) {
     return missing(user.error);
   }
@@ -328,12 +355,10 @@ async function fetchInstagramMedia(env) {
   const result = await fetchPages(
     cfg.graphVersion,
     `${user.id}/media`,
-    cfg.userToken,
-    {
-      fields:
-        "id,caption,media_type,media_product_type,media_url,permalink,thumbnail_url,timestamp",
-    },
+    token,
+    { fields: useInstagramLogin ? INSTAGRAM_LOGIN_MEDIA_FIELDS : FACEBOOK_LOGIN_MEDIA_FIELDS },
     MAX_IG_MEDIA,
+    host,
   );
 
   if (!result.ok && result.data.length === 0) {
@@ -349,7 +374,7 @@ async function fetchInstagramMedia(env) {
   const data = [];
   for (let index = 0; index < result.data.length; index += INSIGHTS_BATCH_SIZE) {
     const batch = result.data.slice(index, index + INSIGHTS_BATCH_SIZE);
-    data.push(...(await Promise.all(batch.map((media) => fetchInstagramMediaInsights(cfg.graphVersion, media, cfg.userToken)))));
+    data.push(...(await Promise.all(batch.map((media) => fetchInstagramMediaInsights(cfg.graphVersion, media, token, host)))));
   }
 
   const insightErrors = data.filter((item) => item.insightsError).length;
@@ -367,10 +392,12 @@ async function fetchInstagramMedia(env) {
       mediaUrl: media.media_url || null,
       thumbnailUrl: media.thumbnail_url || null,
       mediaType: media.mediaType,
+      publicMetrics: normalizeInstagramListMetrics(media),
       insights: media.insights,
       insightsError: media.insightsError,
     })),
     instagramUserId: user.id,
+    apiMode: useInstagramLogin ? "instagram_login" : "facebook_login",
     dataQuality: {
       complete: !result.truncated && insightErrors === 0,
       listComplete: !result.truncated,
@@ -391,6 +418,8 @@ export async function fetchContentDashboard(env) {
     env.META_CONTENT_PAGE_ID ||
       env.META_CONTENT_PAGE_ACCESS_TOKEN ||
       env.META_CONTENT_USER_ACCESS_TOKEN ||
+      env.INSTAGRAM_ACCESS_TOKEN ||
+      env.META_IG_LOGIN_ACCESS_TOKEN ||
       env.META_CONTENT_IG_USER_ID,
   );
 

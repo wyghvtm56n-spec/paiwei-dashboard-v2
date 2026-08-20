@@ -6,6 +6,7 @@ import {
 } from "./auth.js";
 import { fetchDashboardData } from "./dashboard-data.js";
 import { renderDashboard } from "./render.js";
+import { renderMessagesPage } from "./message-center.js";
 
 const securityHeaders = {
   "content-security-policy":
@@ -54,7 +55,7 @@ export default {
     const url = new URL(request.url);
 
     if (request.method === "GET" && url.pathname === "/health") {
-      return jsonResponse({ ok: true, service: "martin-decision-center", version: "2.2.0" });
+      return jsonResponse({ ok: true, service: "martin-decision-center", version: "2.4.0" });
     }
 
     if (request.method === "GET" && url.pathname === "/login") {
@@ -95,6 +96,10 @@ export default {
 
       if (url.pathname === "/api/dashboard") {
         return jsonResponse({ ok: true, data }, 200, cacheHeader);
+      }
+
+      if (url.pathname === "/messages") {
+        return htmlResponse(renderMessagesPage(data), 200, cacheHeader);
       }
 
       if (url.pathname === "/meta/ads") {

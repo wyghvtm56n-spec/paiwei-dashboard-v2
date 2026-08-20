@@ -124,9 +124,10 @@ function renderSourcePanel(title, result, emptyMessage) {
     `;
   }
   const listMetricsAvailable = Boolean(result?.dataQuality?.listMetricsAvailable);
+  const modeNote = result?.apiMode === "instagram_login" ? "Instagram Login" : "Facebook Login";
   const subtitle = listMetricsAvailable
-    ? "已顯示 Meta 可回傳的影片欄位；完整洞察可能延遲最多 48 小時。"
-    : "目前可顯示影片清單；完整觀看與互動洞察需要額外 Meta Insights 權限。";
+    ? `${modeNote}：已顯示 Meta 可回傳的影片欄位；完整洞察可能延遲最多 48 小時。`
+    : `${modeNote}：目前可顯示影片清單；完整觀看與互動洞察可能需要額外 Meta Insights 權限。`;
   return `
     <section class="panel content-source-panel">
       <div class="content-panel-heading"><h3>${escapeHtml(title)}</h3>${status(`${items.length} 筆`, "info")}</div>
@@ -148,7 +149,7 @@ export function renderContentSection(content) {
         <section class="panel content-setup-panel">
           <h3>尚未連接內容洞察</h3>
           <p class="panel-subtitle">此區需要額外的內容權限與 Token；現有 META_ACCESS_TOKEN 只用於 Ads Insights，不會混用。</p>
-          <div class="setup-grid"><span><b>Facebook 粉專</b><small>Page ID＋Page access token＋pages_read_engagement</small></span><span><b>Instagram 專業帳號</b><small>Instagram User ID＋Facebook User access token＋instagram_manage_insights</small></span></div>
+          <div class="setup-grid"><span><b>Facebook 粉專</b><small>Page ID＋Page access token＋pages_read_engagement</small></span><span><b>Instagram 專業帳號</b><small>Instagram User ID＋Instagram Login User Token＋instagram_business_basic／instagram_business_manage_insights</small></span></div>
         </section>
       </section>
     `;
@@ -162,7 +163,7 @@ export function renderContentSection(content) {
         ${renderSourcePanel("Facebook 粉專影片", content.page, "請設定 Page ID 與 Page access token。")}
         ${renderSourcePanel("Instagram Reels／貼文", content.instagram, "請設定 Instagram Professional Account 與 User access token。")}
       </div>
-      <p class="section-note">Instagram 的 views、likes、comments、shares 等一般欄位主要代表自然互動；不要直接與廣告報表的結果相加。若需要含 promoted／boosted 的 total metrics，必須使用 Facebook Login for Business 且該指標可用。</p>
+      <p class="section-note">Instagram Login 的 views、likes、comments、shares 等一般欄位主要代表自然互動；不要直接與廣告報表的結果相加。若需要含 promoted／boosted 的 total metrics，必須使用 Facebook Login for Business 且該指標可用。</p>
     </section>
   `;
 }

@@ -1,5 +1,6 @@
 import { buildDecisionSnapshot } from "./decision.js";
 import { renderContentSection } from "./content-render.js";
+import { renderMessageCenterSection } from "./message-center.js";
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -850,12 +851,12 @@ export function renderDashboard(data) {
         <div class="brand-mark">MD</div>
         <div><strong>Martin Decision Center</strong><span>派威營運決策中心</span></div>
       </div>
-      <div class="updated">更新時間：${escapeHtml(updatedAt)}<br>版本 2.2.0</div>
+      <div class="updated">更新時間：${escapeHtml(updatedAt)}<br>版本 2.4.0</div>
     </header>
 
     <nav class="section-nav" aria-label="儀表板區段">
       <a href="#overview">今日摘要</a><a href="#metrics">核心指標</a><a href="#ads">廣告</a>
-      <a href="#audience">受眾</a><a href="#line">LINE</a><a href="#content-videos">內容</a><a href="#data-quality">資料品質</a>
+      <a href="#audience">受眾</a><a href="#messages">訊息中心</a><a href="#content-videos">內容</a><a href="#data-quality">資料品質</a>
     </nav>
 
     ${renderDecisionPanel(decision, currency)}
@@ -899,13 +900,7 @@ export function renderDashboard(data) {
       </div>
     </section>
 
-    <section class="section" id="line">
-      <div class="section-head"><div><h2>LINE 互動</h2><p>目前仍缺少預約、成交與營收資料。</p></div></div>
-      <div class="two-column">
-        <section class="panel"><h3>近 14 天訊息趨勢</h3><p class="panel-subtitle">訊息事件與匿名詢問帳號。</p>${renderLineTrend(data.line?.daily)}</section>
-        <section class="panel"><h3>近 30 天常見需求</h3><p class="panel-subtitle">依關鍵字規則整理。</p>${renderLineDemand(data.line?.categories)}</section>
-      </div>
-    </section>
+    ${renderMessageCenterSection(data)}
 
     ${renderContentSection(data.content)}
 
