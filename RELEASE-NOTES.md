@@ -1,5 +1,11 @@
 # Martin Decision Center v2.4.0
 
+## v2.6.1 Facebook 聯絡人識別修復
+
+訊息中心新增管理者專用的 Facebook 聯絡人名稱同步按鈕與 `POST /messages/profile-refresh` 路由。系統會共用既有 AES-GCM delivery target 解密，不把 PSID 寫入回傳 JSON、HTML 或日誌，並以 Meta User Profile API 取得 `name`／`first_name`／`last_name` 後回寫 `message_contact_profiles`。每次最多處理 10 筆，可由管理者重複執行，避免一次觸發大量 Meta 請求。
+
+Facebook 聯絡人識別仍取決於 Meta 的 Business Asset User Profile Access Advanced Access、Page「Info About People」欄位權限與有效 Page Token。若 Meta 回傳 OAuth、權限不足或沒有 profile，系統會保留「未識別聯絡人」並顯示安全 guidance，不會猜測姓名。
+
 ## v2.6.0 線上訊息回覆與影片洞察恢復
 
 訊息中心新增管理密碼保護的 `POST /messages/reply`，支援 Facebook Messenger 與 Instagram Direct 的文字回覆。Worker 會在送出前檢查最後入站訊息是否仍在 Meta 24 小時標準回覆視窗內，從 `message_delivery_targets` 解密必要投遞目標，使用既有 D1 unique idempotency hash 防止重複發送，並將成功的 outbound event 寫回訊息中心。LINE 仍保留官方後台入口；超過視窗或缺少安全投遞目標時採 fail-closed，不會猜測或輸出平台 User ID。
