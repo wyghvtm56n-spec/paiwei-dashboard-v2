@@ -155,8 +155,18 @@ export function handleLogout() {
 const MESSAGE_COOKIE_NAME = "martin_message_session";
 const MESSAGE_SESSION_SECONDS = 60 * 60 * 8;
 
+function messagePasswords(env) {
+  return [env.MESSAGE_ADMIN_PASSWORD, env.DASHBOARD_PASSWORD]
+    .flatMap((value) => {
+      const raw = String(value ?? "");
+      const trimmed = raw.trim();
+      return [raw, trimmed];
+    })
+    .filter((value, index, values) => value.length > 0 && values.indexOf(value) === index);
+}
+
 function messagePassword(env) {
-  return env.MESSAGE_ADMIN_PASSWORD || env.DASHBOARD_PASSWORD || "";
+  return messagePasswords(env)[0] || "";
 }
 
 function messageSessionSecret(env) {
@@ -237,9 +247,9 @@ export function renderMessageConfigurationPage() {
 export async function handleMessageLogin(request, env) {
   if (!messageAuthConfigured(env)) return new Response(null, { status: 303, headers: { location: "/messages" } });
   const form = await request.formData();
-  const password = String(form.get("password") || "");
-  if (!constantTimeEqual(password, messagePassword(env))) {
-    return new Response(renderMessageLoginPage("密碼不正確，請再試一次。"), {
+  const password = String(form.get("password") || "").trim();
+  if (!messagePasswords(env).some((candidate) => constantTimeEqual(password, candidate))) {
+    return new Response(renderMessageLoginPage("密碼不正確，請確認使用的是訊息中心管理密碼，且沒有複製到前後空白。"), {
       status: 401,
       headers: { "content-type": "text/html; charset=utf-8" },
     });

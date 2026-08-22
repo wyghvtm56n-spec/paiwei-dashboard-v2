@@ -1,5 +1,9 @@
 # Martin Decision Center v2.4.0
 
+## v2.6.2 訊息中心登入相容性修復
+
+訊息中心登入現在會安全支援 `MESSAGE_ADMIN_PASSWORD`、既有 `DASHBOARD_PASSWORD` fallback，以及密碼前後空白／Cloudflare Secret 誤帶換行的情況。Session 仍由 `MESSAGE_SESSION_SECRET`（或既有簽章金鑰 fallback）以 HMAC-SHA-256 簽署，未通過驗證時不會讀取訊息資料。
+
 ## v2.6.1 Facebook 聯絡人識別修復
 
 訊息中心新增管理者專用的 Facebook 聯絡人名稱同步按鈕與 `POST /messages/profile-refresh` 路由。系統會共用既有 AES-GCM delivery target 解密，不把 PSID 寫入回傳 JSON、HTML 或日誌，並以 Meta User Profile API 取得 `name`／`first_name`／`last_name` 後回寫 `message_contact_profiles`。每次最多處理 10 筆，可由管理者重複執行，避免一次觸發大量 Meta 請求。

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { getAuthState, handleLogin } from "../src/auth.js";
+import { getAuthState, handleLogin, handleMessageLogin } from "../src/auth.js";
 import worker from "../src/worker.js";
 
 const env = {
@@ -31,6 +31,35 @@ test("正確密碼會簽發安全 Cookie", async () => {
   assert.match(cookie, /HttpOnly/);
   assert.match(cookie, /Secure/);
   assert.match(cookie, /SameSite=Lax/);
+});
+
+test("訊息中心專用密碼與前後空白相容", async () => {
+  const messageEnv = {
+    MESSAGE_ADMIN_PASSWORD: "message-password",
+    MESSAGE_SESSION_SECRET: "message-session-secret",
+  };
+  const response = await handleMessageLogin(
+    new Request("https://example.com/messages/login", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ password: "  message-password  " }),
+    }),
+    messageEnv,
+  );
+  assert.equal(response.status, 303);
+  assert.match(response.headers.get("set-cookie") || "", /martin_message_session=/);
+});
+
+test("訊息中心可使用既有主儀表板密碼 fallback", async () => {
+  const response = await handleMessageLogin(
+    new Request("https://example.com/messages/login", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ password: "dashboard-password" }),
+    }),
+    { DASHBOARD_PASSWORD: "dashboard-password", COOKIE_SIGNING_KEY: "dashboard-signing-key" },
+  );
+  assert.equal(response.status, 303);
 });
 
 test("錯誤密碼會被拒絕", async () => {
